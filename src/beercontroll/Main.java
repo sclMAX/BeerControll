@@ -206,7 +206,6 @@ public class Main extends javax.swing.JFrame {
         LicorQuemadorPB.setBackground(new java.awt.Color(255, 255, 204));
         LicorQuemadorPB.setFont(new java.awt.Font("Tahoma", 1, 12)); // NOI18N
         LicorQuemadorPB.setForeground(new java.awt.Color(255, 0, 102));
-        LicorQuemadorPB.setIndeterminate(true);
         LicorQuemadorPB.setString("QUEMADOR");
         LicorQuemadorPB.setStringPainted(true);
 
@@ -358,6 +357,13 @@ public class Main extends javax.swing.JFrame {
 
     private void LicorMetaBarraStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_LicorMetaBarraStateChanged
         licorMeta = LicorMetaBarra.getValue();
+        try {
+            Arduino.sendData(Integer.toString(licorMeta));
+            jTextArea1.append("ENVIADO: " + Integer.toString(licorMeta) + "\n");
+        } catch (Exception ex) {
+            jTextArea1.append("ERROR AL ENVIAR: " + Integer.toString(licorMeta) + "\n");
+            Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+        }
         licorUpdate();
     }//GEN-LAST:event_LicorMetaBarraStateChanged
 
@@ -400,9 +406,9 @@ public class Main extends javax.swing.JFrame {
         LicorMetaLB.setText(Integer.toString(licorMeta) + "ºC");
         LicorMetaPB.setValue(licorMeta);
         LicorActualLB.setText(Integer.toString(Data.getLicorTemp()) + "ºC");
-        LicorActualPB.setValue((int)Data.getLicorTemp());
+        LicorActualPB.setValue((int) Data.getLicorTemp());
         LicorQuemadorPB.setIndeterminate(Data.isLicorQuemador());
-        
+
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
