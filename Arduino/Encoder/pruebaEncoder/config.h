@@ -17,8 +17,8 @@
                             //EXP1 -> 1 VCC +5V
 
 #define BEEPER 37
-#define KILL_PIN 32
-#define BTN_EN1 31
-#define BTN_EN2 33
-#define BTN_ENC 35
+#define KILL_PIN 25
+#define BTN_EN1 40
+#define BTN_EN2 41
+#define BTN_ENC 42
 
