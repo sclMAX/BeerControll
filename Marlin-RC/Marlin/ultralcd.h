@@ -70,11 +70,6 @@
     void lcd_quick_feedback(); // Audible feedback for a button click - could also be visual
     bool lcd_clicked();
     void lcd_ignore_click(bool b=true);
-
-    #if ENABLED(FILAMENT_CHANGE_FEATURE)
-      void lcd_filament_change_show_message(FilamentChangeMessage message);
-    #endif // FILAMENT_CHANGE_FEATURE
-
   #else
     FORCE_INLINE void lcd_buttons_update() {}
   #endif
@@ -85,11 +80,6 @@
   extern int preheatHotendTemp2;
   extern int preheatBedTemp2;
   extern int preheatFanSpeed2;
-
-  #if ENABLED(FILAMENT_LCD_DISPLAY)
-    extern millis_t previous_lcd_status_ms;
-  #endif
-
   bool lcd_blink();
 
   #if ENABLED(ULTIPANEL)

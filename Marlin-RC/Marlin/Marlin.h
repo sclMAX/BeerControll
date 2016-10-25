@@ -1,24 +1,3 @@
-/**
- * Marlin 3D Printer Firmware
- * Copyright (C) 2016 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
- *
- * Based on Sprinter and grbl.
- * Copyright (C) 2011 Camiel Gubbels / Erik van der Zalm
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- */
 #ifndef MARLIN_H
 #define MARLIN_H
 
@@ -27,34 +6,19 @@
 #include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
-
 #include <util/delay.h>
 #include <avr/pgmspace.h>
 #include <avr/eeprom.h>
 #include <avr/interrupt.h>
-
 #include "MarlinConfig.h"
-
 #include "enum.h"
 #include "types.h"
 #include "fastio.h"
 #include "utility.h"
-
-#ifdef USBCON
-  #include "HardwareSerial.h"
-  #define MYSERIAL Serial  
-#else
-  #include "MarlinSerial.h"
-  #define MYSERIAL customizedSerial
-#endif
-
+#include "MarlinSerial.h"
+#define MYSERIAL customizedSerial
 #include "WString.h"
-
-#if ENABLED(PRINTCOUNTER)
-  #include "printcounter.h"
-#else
-  #include "stopwatch.h"
-#endif
+#include "stopwatch.h"
 
 #define SERIAL_CHAR(x) MYSERIAL.write(x)
 #define SERIAL_EOL SERIAL_CHAR('\n')
@@ -104,18 +68,8 @@ FORCE_INLINE void serialprintPGM(const char* str) {
     str++;
   }
 }
-
-void idle(
-  #if ENABLED(FILAMENT_CHANGE_FEATURE)
-    bool no_stepper_sleep = false  // pass true to keep steppers from disabling on timeout
-  #endif
-);
-
+void idle();
 void manage_inactivity(bool ignore_stepper_queue = false);
-
-#if ENABLED(DUAL_X_CARRIAGE) || ENABLED(DUAL_NOZZLE_DUPLICATION_MODE)
-  extern bool extruder_duplication_enabled;
-#endif
 
 #if HAS_X2_ENABLE
   #define  enable_x() do{ X_ENABLE_WRITE( X_ENABLE_ON); X2_ENABLE_WRITE( X_ENABLE_ON); }while(0)
@@ -198,11 +152,6 @@ void reset_bed_level();
 void kill(const char*);
 
 void quickstop_stepper();
-
-#if ENABLED(FILAMENT_RUNOUT_SENSOR)
-  void handle_filament_runout();
-#endif
-
 extern uint8_t marlin_debug_flags;
 #define DEBUGGING(F) (marlin_debug_flags & (DEBUG_## F))
 
@@ -219,11 +168,6 @@ void clamp_to_software_endstops(float target[3]);
 
 extern millis_t previous_cmd_ms;
 inline void refresh_cmd_timeout() { previous_cmd_ms = millis(); }
-
-#if ENABLED(FAST_PWM_FAN)
-  void setPwmFrequency(uint8_t pin, int val);
-#endif
-
 /**
  * Feedrate scaling and conversion
  */
@@ -266,36 +210,6 @@ int code_value_int();
 float code_value_temp_abs();
 float code_value_temp_diff();
 
-#if ENABLED(DELTA)
-  extern float delta[3];
-  extern float endstop_adj[3]; // axis[n].endstop_adj
-  extern float delta_radius;
-  extern float delta_diagonal_rod;
-  extern float delta_segments_per_second;
-  extern float delta_diagonal_rod_trim_tower_1;
-  extern float delta_diagonal_rod_trim_tower_2;
-  extern float delta_diagonal_rod_trim_tower_3;
-  void inverse_kinematics(const float cartesian[3]);
-  void recalc_delta_settings(float radius, float diagonal_rod);
-  #if ENABLED(AUTO_BED_LEVELING_FEATURE)
-    extern int delta_grid_spacing[2];
-    void adjust_delta(float cartesian[3]);
-  #endif
-#elif ENABLED(SCARA)
-  extern float delta[3];
-  extern float axis_scaling[3];  // Build size scaling
-  void inverse_kinematics(const float cartesian[3]);
-  void forward_kinematics_SCARA(float f_scara[3]);
-#endif
-
-#if ENABLED(Z_DUAL_ENDSTOPS)
-  extern float z_endstop_adj;
-#endif
-
-#if HAS_BED_PROBE
-  extern float zprobe_zoffset;
-#endif
-
 #if ENABLED(HOST_KEEPALIVE_FEATURE)
   extern uint8_t host_keepalive_interval;
 #endif
@@ -304,42 +218,10 @@ float code_value_temp_diff();
   extern int fanSpeeds[FAN_COUNT];
 #endif
 
-#if ENABLED(BARICUDA)
-  extern int baricuda_valve_pressure;
-  extern int baricuda_e_to_p_pressure;
-#endif
-
-#if ENABLED(FILAMENT_WIDTH_SENSOR)
-  extern float filament_width_nominal;  //holds the theoretical filament diameter i.e., 3.00 or 1.75
-  extern bool filament_sensor;  //indicates that filament sensor readings should control extrusion
-  extern float filament_width_meas; //holds the filament diameter as accurately measured
-  extern int8_t measurement_delay[];  //ring buffer to delay measurement
-  extern int filwidth_delay_index1, filwidth_delay_index2;  //ring buffer index. used by planner, temperature, and main code
-  extern int meas_delay_cm; //delay distance
-#endif
-
-#if ENABLED(FILAMENT_CHANGE_FEATURE)
-  extern FilamentChangeMenuResponse filament_change_menu_response;
-#endif
-
 #if ENABLED(PID_EXTRUSION_SCALING)
   extern int lpq_len;
 #endif
-
-#if ENABLED(FWRETRACT)
-  extern bool autoretract_enabled;
-  extern bool retracted[EXTRUDERS]; // extruder[n].retracted
-  extern float retract_length, retract_length_swap, retract_feedrate_mm_s, retract_zlift;
-  extern float retract_recover_length, retract_recover_length_swap, retract_recover_feedrate_mm_s;
-#endif
-
-// Print job timer
-#if ENABLED(PRINTCOUNTER)
-  extern PrintCounter print_job_timer;
-#else
-  extern Stopwatch print_job_timer;
-#endif
-
+extern Stopwatch print_job_timer;
 // Handling multiple extruders pins
 extern uint8_t active_extruder;
 

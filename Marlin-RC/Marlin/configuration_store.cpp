@@ -71,19 +71,7 @@
  *
  * AUTO BED LEVELING
  *  245  M851      zprobe_zoffset (float)
- *
- * DELTA:
- *  249  M666 XYZ  endstop_adj (float x3)
- *  261  M665 R    delta_radius (float)
- *  265  M665 L    delta_diagonal_rod (float)
- *  269  M665 S    delta_segments_per_second (float)
- *  273  M665 A    delta_diagonal_rod_trim_tower_1 (float)
- *  277  M665 B    delta_diagonal_rod_trim_tower_2 (float)
- *  281  M665 C    delta_diagonal_rod_trim_tower_3 (float)
- *
- * Z_DUAL_ENDSTOPS:
- *  285  M666 Z    z_endstop_adj (float)
- *
+ * *
  * ULTIPANEL:
  *  289  M145 S0 H preheatHotendTemp1 (int)
  *  291  M145 S0 B preheatBedTemp1 (int)
@@ -99,16 +87,10 @@
  *  349  M301 E3 PIDC  Kp[3], Ki[3], Kd[3], Kc[3] (float x4)
  *  365  M301 L        lpq_len (int)
  *
- * PIDTEMPBED:
  *  367  M304 PID  thermalManager.bedKp, thermalManager.bedKi, thermalManager.bedKd (float x3)
  *
  * DOGLCD:
  *  379  M250 C    lcd_contrast (int)
- *
- * SCARA:
- *  381  M365 XYZ  axis_scaling (float x3)
- *
- * FWRETRACT:
  *  393  M209 S    autoretract_enabled (bool)
  *  394  M207 S    retract_length (float)
  *  398  M207 W    retract_length_swap (float)
@@ -132,10 +114,6 @@
 #include "temperature.h"
 #include "ultralcd.h"
 #include "configuration_store.h"
-
-#if ENABLED(MESH_BED_LEVELING)
-  #include "mesh_bed_leveling.h"
-#endif
 
 uint16_t eeprom_checksum;
 const char version[4] = EEPROM_VERSION;
@@ -170,13 +148,6 @@ void _EEPROM_readData(int &pos, uint8_t* value, uint8_t size) {
 void Config_Postprocess() {
   // steps per s2 needs to be updated to agree with units per s2
   planner.reset_acceleration_rates();
-
-  // Make sure delta kinematics are updated before refreshing the
-  // planner position so the stepper counts will be set correctly.
-  #if ENABLED(DELTA)
-    recalc_delta_settings(delta_radius, delta_diagonal_rod);
-  #endif
-
   // Refresh steps_to_mm with the reciprocal of axis_steps_per_mm
   // and init stepper.count[], planner.position[] with current_position
   planner.refresh_positioning();
@@ -223,53 +194,20 @@ void Config_StoreSettings()  {
   EEPROM_WRITE(planner.max_z_jerk);
   EEPROM_WRITE(planner.max_e_jerk);
   EEPROM_WRITE(home_offset);
-
-  #if ENABLED(MESH_BED_LEVELING)
-    // Compile time test that sizeof(mbl.z_values) is as expected
-    typedef char c_assert[(sizeof(mbl.z_values) == (MESH_NUM_X_POINTS) * (MESH_NUM_Y_POINTS) * sizeof(dummy)) ? 1 : -1];
-    uint8_t mesh_num_x = MESH_NUM_X_POINTS,
-            mesh_num_y = MESH_NUM_Y_POINTS,
-            dummy_uint8 = mbl.status & _BV(MBL_STATUS_HAS_MESH_BIT);
-    EEPROM_WRITE(dummy_uint8);
-    EEPROM_WRITE(mbl.z_offset);
-    EEPROM_WRITE(mesh_num_x);
-    EEPROM_WRITE(mesh_num_y);
-    EEPROM_WRITE(mbl.z_values);
-  #else
-    // For disabled MBL write a default mesh
-    uint8_t mesh_num_x = 3,
-            mesh_num_y = 3,
-            dummy_uint8 = 0;
-    dummy = 0.0f;
-    EEPROM_WRITE(dummy_uint8);
-    EEPROM_WRITE(dummy);
-    EEPROM_WRITE(mesh_num_x);
-    EEPROM_WRITE(mesh_num_y);
-    for (uint8_t q = 0; q < mesh_num_x * mesh_num_y; q++) EEPROM_WRITE(dummy);
-  #endif // MESH_BED_LEVELING
-
-  #if !HAS_BED_PROBE
-    float zprobe_zoffset = 0;
-  #endif
+  // For disabled MBL write a default mesh
+  uint8_t mesh_num_x = 3,
+          mesh_num_y = 3,
+          dummy_uint8 = 0;
+  dummy = 0.0f;
+  EEPROM_WRITE(dummy_uint8);
+  EEPROM_WRITE(dummy);
+  EEPROM_WRITE(mesh_num_x);
+  EEPROM_WRITE(mesh_num_y);
+  for (uint8_t q = 0; q < mesh_num_x * mesh_num_y; q++) EEPROM_WRITE(dummy);
+  float zprobe_zoffset = 0;
   EEPROM_WRITE(zprobe_zoffset);
-
-  // 9 floats for DELTA / Z_DUAL_ENDSTOPS
-  #if ENABLED(DELTA)
-    EEPROM_WRITE(endstop_adj);               // 3 floats
-    EEPROM_WRITE(delta_radius);              // 1 float
-    EEPROM_WRITE(delta_diagonal_rod);        // 1 float
-    EEPROM_WRITE(delta_segments_per_second); // 1 float
-    EEPROM_WRITE(delta_diagonal_rod_trim_tower_1);  // 1 float
-    EEPROM_WRITE(delta_diagonal_rod_trim_tower_2);  // 1 float
-    EEPROM_WRITE(delta_diagonal_rod_trim_tower_3);  // 1 float
-  #elif ENABLED(Z_DUAL_ENDSTOPS)
-    EEPROM_WRITE(z_endstop_adj);            // 1 float
-    dummy = 0.0f;
-    for (uint8_t q = 8; q--;) EEPROM_WRITE(dummy);
-  #else
-    dummy = 0.0f;
-    for (uint8_t q = 9; q--;) EEPROM_WRITE(dummy);
-  #endif
+  dummy = 0.0f;
+  for (uint8_t q = 9; q--;) EEPROM_WRITE(dummy);
 
   #if DISABLED(ULTIPANEL)
     int preheatHotendTemp1 = PREHEAT_1_TEMP_HOTEND, preheatBedTemp1 = PREHEAT_1_TEMP_BED, preheatFanSpeed1 = PREHEAT_1_FAN_SPEED,
@@ -312,15 +250,9 @@ void Config_StoreSettings()  {
     int lpq_len = 20;
   #endif
   EEPROM_WRITE(lpq_len);
-
-  #if DISABLED(PIDTEMPBED)
-    dummy = DUMMY_PID_VALUE;
-    for (uint8_t q = 3; q--;) EEPROM_WRITE(dummy);
-  #else
-    EEPROM_WRITE(thermalManager.bedKp);
-    EEPROM_WRITE(thermalManager.bedKi);
-    EEPROM_WRITE(thermalManager.bedKd);
-  #endif
+  dummy = DUMMY_PID_VALUE;
+  for (uint8_t q = 3; q--;) EEPROM_WRITE(dummy);
+ 
 
   #if !HAS_LCD_CONTRAST
     const int lcd_contrast = 32;
@@ -333,27 +265,6 @@ void Config_StoreSettings()  {
     dummy = 1.0f;
     EEPROM_WRITE(dummy);
   #endif
-
-  #if ENABLED(FWRETRACT)
-    EEPROM_WRITE(autoretract_enabled);
-    EEPROM_WRITE(retract_length);
-    #if EXTRUDERS > 1
-      EEPROM_WRITE(retract_length_swap);
-    #else
-      dummy = 0.0f;
-      EEPROM_WRITE(dummy);
-    #endif
-    EEPROM_WRITE(retract_feedrate_mm_s);
-    EEPROM_WRITE(retract_zlift);
-    EEPROM_WRITE(retract_recover_length);
-    #if EXTRUDERS > 1
-      EEPROM_WRITE(retract_recover_length_swap);
-    #else
-      dummy = 0.0f;
-      EEPROM_WRITE(dummy);
-    #endif
-    EEPROM_WRITE(retract_recover_feedrate_mm_s);
-  #endif // FWRETRACT
 
   EEPROM_WRITE(volumetric_enabled);
 
@@ -422,45 +333,13 @@ void Config_RetrieveSettings() {
     EEPROM_READ(dummy);
     EEPROM_READ(mesh_num_x);
     EEPROM_READ(mesh_num_y);
-    #if ENABLED(MESH_BED_LEVELING)
-      mbl.status = dummy_uint8;
-      mbl.z_offset = dummy;
-      if (mesh_num_x == MESH_NUM_X_POINTS && mesh_num_y == MESH_NUM_Y_POINTS) {
-        // EEPROM data fits the current mesh
-        EEPROM_READ(mbl.z_values);
-      }
-      else {
-        // EEPROM data is stale
-        mbl.reset();
-        for (uint8_t q = 0; q < mesh_num_x * mesh_num_y; q++) EEPROM_READ(dummy);
-      }
-    #else
-      // MBL is disabled - skip the stored data
-      for (uint8_t q = 0; q < mesh_num_x * mesh_num_y; q++) EEPROM_READ(dummy);
-    #endif // MESH_BED_LEVELING
-
-    #if !HAS_BED_PROBE
-      float zprobe_zoffset = 0;
-    #endif
+    // MBL is disabled - skip the stored data
+    for (uint8_t q = 0; q < mesh_num_x * mesh_num_y; q++) EEPROM_READ(dummy);
+    float zprobe_zoffset = 0;
     EEPROM_READ(zprobe_zoffset);
-
-    #if ENABLED(DELTA)
-      EEPROM_READ(endstop_adj);                // 3 floats
-      EEPROM_READ(delta_radius);               // 1 float
-      EEPROM_READ(delta_diagonal_rod);         // 1 float
-      EEPROM_READ(delta_segments_per_second);  // 1 float
-      EEPROM_READ(delta_diagonal_rod_trim_tower_1);  // 1 float
-      EEPROM_READ(delta_diagonal_rod_trim_tower_2);  // 1 float
-      EEPROM_READ(delta_diagonal_rod_trim_tower_3);  // 1 float
-    #elif ENABLED(Z_DUAL_ENDSTOPS)
-      EEPROM_READ(z_endstop_adj);
-      dummy = 0.0f;
-      for (uint8_t q=8; q--;) EEPROM_READ(dummy);
-    #else
-      dummy = 0.0f;
-      for (uint8_t q=9; q--;) EEPROM_READ(dummy);
-    #endif
-
+    dummy = 0.0f;
+    for (uint8_t q=9; q--;) EEPROM_READ(dummy);
+    
     #if DISABLED(ULTIPANEL)
       int preheatHotendTemp1, preheatBedTemp1, preheatFanSpeed1,
           preheatHotendTemp2, preheatBedTemp2, preheatFanSpeed2;
@@ -500,18 +379,8 @@ void Config_RetrieveSettings() {
       int lpq_len;
     #endif
     EEPROM_READ(lpq_len);
-
-    #if ENABLED(PIDTEMPBED)
-      EEPROM_READ(dummy); // bedKp
-      if (dummy != DUMMY_PID_VALUE) {
-        thermalManager.bedKp = dummy;
-        EEPROM_READ(thermalManager.bedKi);
-        EEPROM_READ(thermalManager.bedKd);
-      }
-    #else
-      for (uint8_t q=3; q--;) EEPROM_READ(dummy); // bedKp, bedKi, bedKd
-    #endif
-
+    for (uint8_t q=3; q--;) EEPROM_READ(dummy); // bedKp, bedKi, bedKd
+  
     #if !HAS_LCD_CONTRAST
       int lcd_contrast;
     #endif
@@ -522,25 +391,6 @@ void Config_RetrieveSettings() {
     #else
       EEPROM_READ(dummy);
     #endif
-
-    #if ENABLED(FWRETRACT)
-      EEPROM_READ(autoretract_enabled);
-      EEPROM_READ(retract_length);
-      #if EXTRUDERS > 1
-        EEPROM_READ(retract_length_swap);
-      #else
-        EEPROM_READ(dummy);
-      #endif
-      EEPROM_READ(retract_feedrate_mm_s);
-      EEPROM_READ(retract_zlift);
-      EEPROM_READ(retract_recover_length);
-      #if EXTRUDERS > 1
-        EEPROM_READ(retract_recover_length_swap);
-      #else
-        EEPROM_READ(dummy);
-      #endif
-      EEPROM_READ(retract_recover_feedrate_mm_s);
-    #endif // FWRETRACT
 
     EEPROM_READ(volumetric_enabled);
 
@@ -597,27 +447,6 @@ void Config_ResetDefault() {
   planner.max_z_jerk = DEFAULT_ZJERK;
   planner.max_e_jerk = DEFAULT_EJERK;
   home_offset[X_AXIS] = home_offset[Y_AXIS] = home_offset[Z_AXIS] = 0;
-
-  #if ENABLED(MESH_BED_LEVELING)
-    mbl.reset();
-  #endif
-
-  #if HAS_BED_PROBE
-    zprobe_zoffset = Z_PROBE_OFFSET_FROM_EXTRUDER;
-  #endif
-
-  #if ENABLED(DELTA)
-    endstop_adj[X_AXIS] = endstop_adj[Y_AXIS] = endstop_adj[Z_AXIS] = 0;
-    delta_radius =  DELTA_RADIUS;
-    delta_diagonal_rod =  DELTA_DIAGONAL_ROD;
-    delta_segments_per_second =  DELTA_SEGMENTS_PER_SECOND;
-    delta_diagonal_rod_trim_tower_1 = DELTA_DIAGONAL_ROD_TRIM_TOWER_1;
-    delta_diagonal_rod_trim_tower_2 = DELTA_DIAGONAL_ROD_TRIM_TOWER_2;
-    delta_diagonal_rod_trim_tower_3 = DELTA_DIAGONAL_ROD_TRIM_TOWER_3;
-  #elif ENABLED(Z_DUAL_ENDSTOPS)
-    z_endstop_adj = 0;
-  #endif
-
   #if ENABLED(ULTIPANEL)
     preheatHotendTemp1 = PREHEAT_1_TEMP_HOTEND;
     preheatBedTemp1 = PREHEAT_1_TEMP_BED;
@@ -649,27 +478,6 @@ void Config_ResetDefault() {
       lpq_len = 20; // default last-position-queue size
     #endif
   #endif // PIDTEMP
-
-  #if ENABLED(PIDTEMPBED)
-    thermalManager.bedKp = DEFAULT_bedKp;
-    thermalManager.bedKi = scalePID_i(DEFAULT_bedKi);
-    thermalManager.bedKd = scalePID_d(DEFAULT_bedKd);
-  #endif
-
-  #if ENABLED(FWRETRACT)
-    autoretract_enabled = false;
-    retract_length = RETRACT_LENGTH;
-    #if EXTRUDERS > 1
-      retract_length_swap = RETRACT_LENGTH_SWAP;
-    #endif
-    retract_feedrate_mm_s = RETRACT_FEEDRATE;
-    retract_zlift = RETRACT_ZLIFT;
-    retract_recover_length = RETRACT_RECOVER_LENGTH;
-    #if EXTRUDERS > 1
-      retract_recover_length_swap = RETRACT_RECOVER_LENGTH_SWAP;
-    #endif
-    retract_recover_feedrate_mm_s = RETRACT_RECOVER_FEEDRATE;
-  #endif
 
   volumetric_enabled = false;
   for (uint8_t q = 0; q < COUNT(filament_size); q++)
@@ -777,60 +585,6 @@ void Config_PrintSettings(bool forReplay) {
   SERIAL_ECHOPAIR(" Y", home_offset[Y_AXIS]);
   SERIAL_ECHOPAIR(" Z", home_offset[Z_AXIS]);
   SERIAL_EOL;
-
-  #if ENABLED(MESH_BED_LEVELING)
-    if (!forReplay) {
-      SERIAL_ECHOLNPGM("Mesh bed leveling:");
-      CONFIG_ECHO_START;
-    }
-    SERIAL_ECHOPAIR("  M420 S", mbl.has_mesh() ? 1 : 0);
-    SERIAL_ECHOPAIR(" X", MESH_NUM_X_POINTS);
-    SERIAL_ECHOPAIR(" Y", MESH_NUM_Y_POINTS);
-    SERIAL_EOL;
-    for (uint8_t py = 1; py <= MESH_NUM_Y_POINTS; py++) {
-      for (uint8_t px = 1; px <= MESH_NUM_X_POINTS; px++) {
-        CONFIG_ECHO_START;
-        SERIAL_ECHOPAIR("  G29 S3 X", px);
-        SERIAL_ECHOPAIR(" Y", py);
-        SERIAL_ECHOPGM(" Z");
-        SERIAL_PROTOCOL_F(mbl.z_values[py-1][px-1], 5);
-        SERIAL_EOL;
-      }
-    }
-  #endif
-
-  #if ENABLED(DELTA)
-    CONFIG_ECHO_START;
-    if (!forReplay) {
-      SERIAL_ECHOLNPGM("Endstop adjustment (mm):");
-      CONFIG_ECHO_START;
-    }
-    SERIAL_ECHOPAIR("  M666 X", endstop_adj[X_AXIS]);
-    SERIAL_ECHOPAIR(" Y", endstop_adj[Y_AXIS]);
-    SERIAL_ECHOPAIR(" Z", endstop_adj[Z_AXIS]);
-    SERIAL_EOL;
-    CONFIG_ECHO_START;
-    if (!forReplay) {
-      SERIAL_ECHOLNPGM("Delta settings: L=diagonal_rod, R=radius, S=segments_per_second, ABC=diagonal_rod_trim_tower_[123]");
-      CONFIG_ECHO_START;
-    }
-    SERIAL_ECHOPAIR("  M665 L", delta_diagonal_rod);
-    SERIAL_ECHOPAIR(" R", delta_radius);
-    SERIAL_ECHOPAIR(" S", delta_segments_per_second);
-    SERIAL_ECHOPAIR(" A", delta_diagonal_rod_trim_tower_1);
-    SERIAL_ECHOPAIR(" B", delta_diagonal_rod_trim_tower_2);
-    SERIAL_ECHOPAIR(" C", delta_diagonal_rod_trim_tower_3);
-    SERIAL_EOL;
-  #elif ENABLED(Z_DUAL_ENDSTOPS)
-    CONFIG_ECHO_START;
-    if (!forReplay) {
-      SERIAL_ECHOLNPGM("Z2 Endstop adjustment (mm):");
-      CONFIG_ECHO_START;
-    }
-    SERIAL_ECHOPAIR("  M666 Z", z_endstop_adj);
-    SERIAL_EOL;
-  #endif // DELTA
-
   #if ENABLED(ULTIPANEL)
     CONFIG_ECHO_START;
     if (!forReplay) {
@@ -885,16 +639,7 @@ void Config_PrintSettings(bool forReplay) {
         SERIAL_EOL;
       }
     #endif // PIDTEMP
-
-    #if ENABLED(PIDTEMPBED)
-      CONFIG_ECHO_START;
-      SERIAL_ECHOPAIR("  M304 P", thermalManager.bedKp);
-      SERIAL_ECHOPAIR(" I", unscalePID_i(thermalManager.bedKi));
-      SERIAL_ECHOPAIR(" D", unscalePID_d(thermalManager.bedKd));
-      SERIAL_EOL;
-    #endif
-
-  #endif // PIDTEMP || PIDTEMPBED
+  #endif // PIDTEMP 
 
   #if HAS_LCD_CONTRAST
     CONFIG_ECHO_START;
@@ -905,41 +650,6 @@ void Config_PrintSettings(bool forReplay) {
     SERIAL_ECHOPAIR("  M250 C", lcd_contrast);
     SERIAL_EOL;
   #endif
-
-  #if ENABLED(FWRETRACT)
-
-    CONFIG_ECHO_START;
-    if (!forReplay) {
-      SERIAL_ECHOLNPGM("Retract: S=Length (mm) F:Speed (mm/m) Z: ZLift (mm)");
-      CONFIG_ECHO_START;
-    }
-    SERIAL_ECHOPAIR("  M207 S", retract_length);
-    #if EXTRUDERS > 1
-      SERIAL_ECHOPAIR(" W", retract_length_swap);
-    #endif
-    SERIAL_ECHOPAIR(" F", MMS_TO_MMM(retract_feedrate_mm_s));
-    SERIAL_ECHOPAIR(" Z", retract_zlift);
-    SERIAL_EOL;
-    CONFIG_ECHO_START;
-    if (!forReplay) {
-      SERIAL_ECHOLNPGM("Recover: S=Extra length (mm) F:Speed (mm/m)");
-      CONFIG_ECHO_START;
-    }
-    SERIAL_ECHOPAIR("  M208 S", retract_recover_length);
-    #if EXTRUDERS > 1
-      SERIAL_ECHOPAIR(" W", retract_recover_length_swap);
-    #endif
-    SERIAL_ECHOPAIR(" F", MMS_TO_MMM(retract_recover_feedrate_mm_s));
-    SERIAL_EOL;
-    CONFIG_ECHO_START;
-    if (!forReplay) {
-      SERIAL_ECHOLNPGM("Auto-Retract: S=0 to disable, 1 to interpret extrude-only moves as retracts or recoveries");
-      CONFIG_ECHO_START;
-    }
-    SERIAL_ECHOPAIR("  M209 S", autoretract_enabled ? 1 : 0);
-    SERIAL_EOL;
-
-  #endif // FWRETRACT
 
   /**
    * Volumetric extrusion M200
@@ -976,19 +686,6 @@ void Config_PrintSettings(bool forReplay) {
     CONFIG_ECHO_START;
     SERIAL_ECHOLNPGM("  M200 D0");
   }
-
-  /**
-   * Auto Bed Leveling
-   */
-  #if HAS_BED_PROBE
-    if (!forReplay) {
-      CONFIG_ECHO_START;
-      SERIAL_ECHOLNPGM("Z-Probe Offset (mm):");
-    }
-    CONFIG_ECHO_START;
-    SERIAL_ECHOPAIR("  M851 Z", zprobe_zoffset);
-    SERIAL_EOL;
-  #endif
 }
 
 #endif // !DISABLE_M503

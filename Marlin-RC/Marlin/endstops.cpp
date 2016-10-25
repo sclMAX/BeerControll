@@ -47,18 +47,7 @@ bool  Endstops::enabled = true,
         #endif
       ;
 volatile char Endstops::endstop_hit_bits; // use X_MIN, Y_MIN, Z_MIN and Z_MIN_PROBE as BIT value
-
-#if ENABLED(Z_DUAL_ENDSTOPS)
-  uint16_t
-#else
-  byte
-#endif
-    Endstops::current_endstop_bits = 0,
-    Endstops::old_endstop_bits = 0;
-
-#if HAS_BED_PROBE
-  volatile bool Endstops::z_probe_enabled = false;
-#endif
+byte Endstops::current_endstop_bits = 0, Endstops::old_endstop_bits = 0;
 
 /**
  * Class and Instance Methods
@@ -206,21 +195,6 @@ void Endstops::M119() {
   #endif
 } // Endstops::M119
 
-#if ENABLED(Z_DUAL_ENDSTOPS)
-
-  // Pass the result of the endstop test
-  void Endstops::test_dual_z_endstops(EndstopEnum es1, EndstopEnum es2) {
-    byte z_test = TEST_ENDSTOP(es1) | (TEST_ENDSTOP(es2) << 1); // bit 0 for Z, bit 1 for Z2
-    if (stepper.current_block->steps[Z_AXIS] > 0) {
-      stepper.endstop_triggered(Z_AXIS);
-      SBI(endstop_hit_bits, Z_MIN);
-      if (!stepper.performing_homing || (z_test == 0x3))  //if not performing home or if both endstops were trigged during homing...
-        stepper.kill_current_block();
-    }
-  }
-
-#endif
-
 // Check endstops - Called from ISR!
 void Endstops::update() {
 
@@ -244,17 +218,12 @@ void Endstops::update() {
 
   #if ENABLED(COREXY) || ENABLED(COREXZ)
     // Head direction in -X axis for CoreXY and CoreXZ bots.
-    // If DeltaA == -DeltaB, the movement is only in Y or Z axis
     if ((stepper.current_block->steps[CORE_AXIS_1] != stepper.current_block->steps[CORE_AXIS_2]) || (stepper.motor_direction(CORE_AXIS_1) == stepper.motor_direction(CORE_AXIS_2))) {
       if (stepper.motor_direction(X_HEAD))
   #else
     if (stepper.motor_direction(X_AXIS))   // stepping along -X axis (regular Cartesian bot)
   #endif
       { // -direction
-        #if ENABLED(DUAL_X_CARRIAGE)
-          // with 2 x-carriages, endstops are only checked in the homing direction for the active extruder
-          if ((stepper.current_block->active_extruder == 0 && X_HOME_DIR == -1) || (stepper.current_block->active_extruder != 0 && X2_HOME_DIR == -1))
-        #endif
           {
             #if HAS_X_MIN
               UPDATE_ENDSTOP(X, MIN);
@@ -262,10 +231,6 @@ void Endstops::update() {
           }
       }
       else { // +direction
-        #if ENABLED(DUAL_X_CARRIAGE)
-          // with 2 x-carriages, endstops are only checked in the homing direction for the active extruder
-          if ((stepper.current_block->active_extruder == 0 && X_HOME_DIR == 1) || (stepper.current_block->active_extruder != 0 && X2_HOME_DIR == 1))
-        #endif
           {
             #if HAS_X_MAX
               UPDATE_ENDSTOP(X, MAX);
@@ -278,7 +243,6 @@ void Endstops::update() {
 
   #if ENABLED(COREXY) || ENABLED(COREYZ)
     // Head direction in -Y axis for CoreXY / CoreYZ bots.
-    // If DeltaA == DeltaB, the movement is only in X or Y axis
     if ((stepper.current_block->steps[CORE_AXIS_1] != stepper.current_block->steps[CORE_AXIS_2]) || (stepper.motor_direction(CORE_AXIS_1) != stepper.motor_direction(CORE_AXIS_2))) {
       if (stepper.motor_direction(Y_HEAD))
   #else
@@ -300,7 +264,6 @@ void Endstops::update() {
 
   #if ENABLED(COREXZ) || ENABLED(COREYZ)
     // Head direction in -Z axis for CoreXZ or CoreYZ bots.
-    // If DeltaA == DeltaB, the movement is only in X or Y axis
     if ((stepper.current_block->steps[CORE_AXIS_1] != stepper.current_block->steps[CORE_AXIS_2]) || (stepper.motor_direction(CORE_AXIS_1) != stepper.motor_direction(CORE_AXIS_2))) {
       if (stepper.motor_direction(Z_HEAD))
   #else
@@ -308,56 +271,12 @@ void Endstops::update() {
   #endif
       { // z -direction
         #if HAS_Z_MIN
-
-          #if ENABLED(Z_DUAL_ENDSTOPS)
-
-            UPDATE_ENDSTOP_BIT(Z, MIN);
-            #if HAS_Z2_MIN
-              UPDATE_ENDSTOP_BIT(Z2, MIN);
-            #else
-              COPY_BIT(current_endstop_bits, Z_MIN, Z2_MIN);
-            #endif
-
-            test_dual_z_endstops(Z_MIN, Z2_MIN);
-
-          #else // !Z_DUAL_ENDSTOPS
-
-            #if HAS_BED_PROBE && ENABLED(Z_MIN_PROBE_USES_Z_MIN_ENDSTOP_PIN)
-              if (z_probe_enabled) UPDATE_ENDSTOP(Z, MIN);
-            #else
-              UPDATE_ENDSTOP(Z, MIN);
-            #endif
-
-          #endif // !Z_DUAL_ENDSTOPS
-
+          UPDATE_ENDSTOP(Z, MIN);
         #endif // HAS_Z_MIN
-
-        #if HAS_BED_PROBE && ENABLED(Z_MIN_PROBE_ENDSTOP) && DISABLED(Z_MIN_PROBE_USES_Z_MIN_ENDSTOP_PIN)
-          if (z_probe_enabled) {
-            UPDATE_ENDSTOP(Z, MIN_PROBE);
-            if (TEST_ENDSTOP(Z_MIN_PROBE)) SBI(endstop_hit_bits, Z_MIN_PROBE);
-          }
-        #endif
       }
       else { // z +direction
         #if HAS_Z_MAX
-
-          #if ENABLED(Z_DUAL_ENDSTOPS)
-
-            UPDATE_ENDSTOP_BIT(Z, MAX);
-            #if HAS_Z2_MAX
-              UPDATE_ENDSTOP_BIT(Z2, MAX);
-            #else
-              COPY_BIT(current_endstop_bits, Z_MAX, Z2_MAX);
-            #endif
-
-            test_dual_z_endstops(Z_MAX, Z2_MAX);
-
-          #else // !Z_DUAL_ENDSTOPS
-
-            UPDATE_ENDSTOP(Z, MAX);
-
-          #endif // !Z_DUAL_ENDSTOPS
+          UPDATE_ENDSTOP(Z, MAX);
         #endif // Z_MAX_PIN
       }
   #if ENABLED(COREXZ)

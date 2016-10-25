@@ -34,11 +34,6 @@
 
 #include "types.h"
 #include "MarlinConfig.h"
-
-#if ENABLED(AUTO_BED_LEVELING_FEATURE)
-  #include "vector_3.h"
-#endif
-
 class Planner;
 extern Planner planner;
 
@@ -63,18 +58,6 @@ typedef struct {
        acceleration_rate;                   // The acceleration rate used for acceleration calculation
 
   unsigned char direction_bits;             // The direction bit set for this block (refers to *_DIRECTION_BIT in config.h)
-
-  // Advance extrusion
-  #if ENABLED(LIN_ADVANCE)
-    bool use_advance_lead;
-    int e_speed_multiplier8; // Factorised by 2^8 to avoid float
-  #elif ENABLED(ADVANCE)
-    long advance_rate;
-    volatile long initial_advance;
-    volatile long final_advance;
-    float advance;
-  #endif
-
   // Fields used by the motion planner to manage acceleration
   float nominal_speed,                               // The nominal speed for this block in mm/sec
         entry_speed,                                 // Entry speed at previous-current junction in mm/sec
@@ -93,13 +76,7 @@ typedef struct {
   #if FAN_COUNT > 0
     unsigned long fan_speed[FAN_COUNT];
   #endif
-
-  #if ENABLED(BARICUDA)
-    unsigned long valve_pressure, e_to_p_pressure;
-  #endif
-
   volatile char busy;
-
 } block_t;
 
 #define BLOCK_MOD(n) ((n)&(BLOCK_BUFFER_SIZE-1))
@@ -130,10 +107,6 @@ class Planner {
     static float max_z_jerk;
     static float max_e_jerk;
     static float min_travel_feedrate_mm_s;
-
-    #if ENABLED(AUTO_BED_LEVELING_FEATURE)
-      static matrix_3x3 bed_level_matrix; // Transform to compensate for bed level
-    #endif
 
   private:
 
@@ -193,44 +166,9 @@ class Planner {
      * Number of moves currently in the planner
      */
     static uint8_t movesplanned() { return BLOCK_MOD(block_buffer_head - block_buffer_tail + BLOCK_BUFFER_SIZE); }
-
     static bool is_full() { return (block_buffer_tail == BLOCK_MOD(block_buffer_head + 1)); }
-
-    #if ENABLED(AUTO_BED_LEVELING_FEATURE) || ENABLED(MESH_BED_LEVELING)
-
-      #if ENABLED(AUTO_BED_LEVELING_FEATURE)
-        /**
-         * The corrected position, applying the bed level matrix
-         */
-        static vector_3 adjusted_position();
-      #endif
-
-      /**
-       * Add a new linear movement to the buffer.
-       *
-       *  x,y,z,e   - target position in mm
-       *  fr_mm_s   - (target) speed of the move (mm/s)
-       *  extruder  - target extruder
-       */
-      static void buffer_line(float x, float y, float z, const float& e, float fr_mm_s, const uint8_t extruder);
-
-      /**
-       * Set the planner.position and individual stepper positions.
-       * Used by G92, G28, G29, and other procedures.
-       *
-       * Multiplies by axis_steps_per_mm[] and does necessary conversion
-       * for COREXY / COREXZ / COREYZ to set the corresponding stepper positions.
-       *
-       * Clears previous speed values.
-       */
-      static void set_position_mm(float x, float y, float z, const float& e);
-
-    #else
-
-      static void buffer_line(const float& x, const float& y, const float& z, const float& e, float fr_mm_s, const uint8_t extruder);
-      static void set_position_mm(const float& x, const float& y, const float& z, const float& e);
-
-    #endif // AUTO_BED_LEVELING_FEATURE || MESH_BED_LEVELING
+    static void buffer_line(const float& x, const float& y, const float& z, const float& e, float fr_mm_s, const uint8_t extruder);
+    static void set_position_mm(const float& x, const float& y, const float& z, const float& e);
 
     /**
      * Set the E position (mm) of the planner (and the E stepper)

@@ -1,38 +1,11 @@
 /**
- * Marlin 3D Printer Firmware
- * Copyright (C) 2016 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
- *
- * Based on Sprinter and grbl.
- * Copyright (C) 2011 Camiel Gubbels / Erik van der Zalm
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- */
-
-/**
  * Conditionals_post.h
  * Defines that depend on configuration but are not editable.
  */
 
 #ifndef CONDITIONALS_POST_H
 #define CONDITIONALS_POST_H
-
-  #if ENABLED(EMERGENCY_PARSER)
-    #define EMERGENCY_PARSER_CAPABILITIES " EMERGENCY_CODES:M108,M112,M410"
-  #else
-    #define EMERGENCY_PARSER_CAPABILITIES ""
-  #endif
+  #define EMERGENCY_PARSER_CAPABILITIES ""
 
   /**
    * Set ENDSTOPPULLUPS for unused endstop switches
@@ -99,33 +72,17 @@
   #ifdef MANUAL_X_HOME_POS
     #define X_HOME_POS MANUAL_X_HOME_POS
   #elif ENABLED(BED_CENTER_AT_0_0)
-    #if ENABLED(DELTA)
-      #define X_HOME_POS 0
-    #else
-      #define X_HOME_POS ((X_MAX_LENGTH) * (X_HOME_DIR) * 0.5)
-    #endif
+    #define X_HOME_POS ((X_MAX_LENGTH) * (X_HOME_DIR) * 0.5)    
   #else
-    #if ENABLED(DELTA)
-      #define X_HOME_POS ((X_MAX_LENGTH) * 0.5)
-    #else
-      #define X_HOME_POS (X_HOME_DIR < 0 ? X_MIN_POS : X_MAX_POS)
-    #endif
+    #define X_HOME_POS (X_HOME_DIR < 0 ? X_MIN_POS : X_MAX_POS)
   #endif
 
   #ifdef MANUAL_Y_HOME_POS
     #define Y_HOME_POS MANUAL_Y_HOME_POS
   #elif ENABLED(BED_CENTER_AT_0_0)
-    #if ENABLED(DELTA)
-      #define Y_HOME_POS 0
-    #else
-      #define Y_HOME_POS ((Y_MAX_LENGTH) * (Y_HOME_DIR) * 0.5)
-    #endif
+    #define Y_HOME_POS ((Y_MAX_LENGTH) * (Y_HOME_DIR) * 0.5)
   #else
-    #if ENABLED(DELTA)
-      #define Y_HOME_POS ((Y_MAX_LENGTH) * 0.5)
-    #else
-      #define Y_HOME_POS (Y_HOME_DIR < 0 ? Y_MIN_POS : Y_MAX_POS)
-    #endif
+    #define Y_HOME_POS (Y_HOME_DIR < 0 ? Y_MIN_POS : Y_MAX_POS)
   #endif
 
   #ifdef MANUAL_Z_HOME_POS
@@ -135,24 +92,9 @@
   #endif
 
   /**
-   * The BLTouch Probe emulates a servo probe
-   */
-  #if ENABLED(BLTOUCH)
-    #undef Z_ENDSTOP_SERVO_NR
-    #undef Z_SERVO_ANGLES
-    #define Z_ENDSTOP_SERVO_NR 0
-    #define Z_SERVO_ANGLES {10,90} // For BLTouch 10=deploy, 90=retract
-    #undef DEACTIVATE_SERVOS_AFTER_MOVE
-    #if ENABLED(Z_MIN_PROBE_USES_Z_MIN_ENDSTOP_PIN)
-      #undef Z_MIN_ENDSTOP_INVERTING
-      #define Z_MIN_ENDSTOP_INVERTING false
-    #endif
-  #endif
-
-  /**
    * Auto Bed Leveling and Z Probe Repeatability Test
    */
-  #define HAS_PROBING_PROCEDURE (ENABLED(AUTO_BED_LEVELING_FEATURE) || ENABLED(Z_MIN_PROBE_REPEATABILITY_TEST))
+  #define HAS_PROBING_PROCEDURE (ENABLED(Z_MIN_PROBE_REPEATABILITY_TEST))
 
   // Boundaries for probing based on set limits
   #define MIN_PROBE_X (max(X_MIN_POS, X_MIN_POS + X_PROBE_OFFSET_FROM_EXTRUDER))
@@ -167,13 +109,6 @@
    */
   #if ENABLED(Z_PROBE_SLED)
     #define Z_SAFE_HOMING
-  #endif
-
-  /**
-   * DELTA should ignore Z_SAFE_HOMING
-   */
-  #if ENABLED(DELTA)
-    #undef Z_SAFE_HOMING
   #endif
 
   /**
@@ -210,16 +145,7 @@
   #define MICROSTEP4 LOW,HIGH
   #define MICROSTEP8 HIGH,HIGH
   #define MICROSTEP16 HIGH,HIGH
-
-  /**
-   * Advance calculated values
-   */
-  #if ENABLED(ADVANCE)
-    #define EXTRUSION_AREA (0.25 * (D_FILAMENT) * (D_FILAMENT) * M_PI)
-    #define STEPS_PER_CUBIC_MM_E (axis_steps_per_mm[E_AXIS] / (EXTRUSION_AREA))
-  #endif
-
-  #if ENABLED(ULTIPANEL) && DISABLED(ELB_FULL_GRAPHIC_CONTROLLER)
+  #if ENABLED(ULTIPANEL)
     #undef SD_DETECT_INVERTED
   #endif
 
@@ -322,8 +248,8 @@
   /**
    * Flags for PID handling
    */
-  #define HAS_PID_HEATING (ENABLED(PIDTEMP) || ENABLED(PIDTEMPBED))
-  #define HAS_PID_FOR_BOTH (ENABLED(PIDTEMP) && ENABLED(PIDTEMPBED))
+  #define HAS_PID_HEATING (ENABLED(PIDTEMP))
+  #define HAS_PID_FOR_BOTH (false)
 
   /**
    * Default hotend offsets, if not defined
@@ -334,9 +260,6 @@
     #endif
     #ifndef HOTEND_OFFSET_Y
       #define HOTEND_OFFSET_Y { 0 } // Y offsets for each extruder
-    #endif
-    #if !defined(HOTEND_OFFSET_Z) && (ENABLED(DUAL_X_CARRIAGE))
-      #define HOTEND_OFFSET_Z { 0 }
     #endif
   #endif
 
@@ -351,45 +274,6 @@
    */
   #define ARRAY_BY_HOTENDS(args...) ARRAY_N(HOTENDS, args)
   #define ARRAY_BY_HOTENDS1(v1) ARRAY_BY_HOTENDS(v1, v1, v1, v1, v1, v1)
-
-  /**
-   * Z_DUAL_ENDSTOPS endstop reassignment
-   */
-  #if ENABLED(Z_DUAL_ENDSTOPS)
-    #define _XMIN_ 100
-    #define _YMIN_ 200
-    #define _ZMIN_ 300
-    #define _XMAX_ 101
-    #define _YMAX_ 201
-    #define _ZMAX_ 301
-    #if Z2_USE_ENDSTOP == _XMAX_
-      #define Z2_MAX_ENDSTOP_INVERTING X_MAX_ENDSTOP_INVERTING
-      #define Z2_MAX_PIN X_MAX_PIN
-      #undef USE_XMAX_PLUG
-    #elif Z2_USE_ENDSTOP == _YMAX_
-      #define Z2_MAX_ENDSTOP_INVERTING Y_MAX_ENDSTOP_INVERTING
-      #define Z2_MAX_PIN Y_MAX_PIN
-      #undef USE_YMAX_PLUG
-    #elif Z2_USE_ENDSTOP == _ZMAX_
-      #define Z2_MAX_ENDSTOP_INVERTING Z_MAX_ENDSTOP_INVERTING
-      #define Z2_MAX_PIN Z_MAX_PIN
-      #undef USE_ZMAX_PLUG
-    #elif Z2_USE_ENDSTOP == _XMIN_
-      #define Z2_MAX_ENDSTOP_INVERTING X_MIN_ENDSTOP_INVERTING
-      #define Z2_MAX_PIN X_MIN_PIN
-      #undef USE_XMIN_PLUG
-    #elif Z2_USE_ENDSTOP == _YMIN_
-      #define Z2_MAX_ENDSTOP_INVERTING Y_MIN_ENDSTOP_INVERTING
-      #define Z2_MAX_PIN Y_MIN_PIN
-      #undef USE_YMIN_PLUG
-    #elif Z2_USE_ENDSTOP == _ZMIN_
-      #define Z2_MAX_ENDSTOP_INVERTING Z_MIN_ENDSTOP_INVERTING
-      #define Z2_MAX_PIN Z_MIN_PIN
-      #undef USE_ZMIN_PLUG
-    #else
-      #define Z2_MAX_ENDSTOP_INVERTING false
-    #endif
-  #endif
 
   /**
    * Shorthand for pin tests, used wherever needed
@@ -413,12 +297,10 @@
   #define HAS_FAN1 (PIN_EXISTS(FAN1) && CONTROLLERFAN_PIN != FAN1_PIN && EXTRUDER_0_AUTO_FAN_PIN != FAN1_PIN && EXTRUDER_1_AUTO_FAN_PIN != FAN1_PIN && EXTRUDER_2_AUTO_FAN_PIN != FAN1_PIN)
   #define HAS_FAN2 (PIN_EXISTS(FAN2) && CONTROLLERFAN_PIN != FAN2_PIN && EXTRUDER_0_AUTO_FAN_PIN != FAN2_PIN && EXTRUDER_1_AUTO_FAN_PIN != FAN2_PIN && EXTRUDER_2_AUTO_FAN_PIN != FAN2_PIN)
   #define HAS_CONTROLLERFAN (PIN_EXISTS(CONTROLLERFAN))
-  #define HAS_SERVOS (defined(NUM_SERVOS) && NUM_SERVOS > 0)
   #define HAS_SERVO_0 (PIN_EXISTS(SERVO0))
   #define HAS_SERVO_1 (PIN_EXISTS(SERVO1))
   #define HAS_SERVO_2 (PIN_EXISTS(SERVO2))
   #define HAS_SERVO_3 (PIN_EXISTS(SERVO3))
-  #define HAS_FILAMENT_WIDTH_SENSOR (PIN_EXISTS(FILWIDTH))
   #define HAS_FIL_RUNOUT (PIN_EXISTS(FIL_RUNOUT))
   #define HAS_HOME (PIN_EXISTS(HOME))
   #define HAS_KILL (PIN_EXISTS(KILL))
@@ -475,13 +357,11 @@
   #define HAS_E3_STEP (PIN_EXISTS(E3_STEP))
   #define HAS_E4_STEP (PIN_EXISTS(E4_STEP))
   #define HAS_DIGIPOTSS (PIN_EXISTS(DIGIPOTSS))
-  #define HAS_BUZZER (PIN_EXISTS(BEEPER) || ENABLED(LCD_USE_I2C_BUZZER))
+  #define HAS_BUZZER (PIN_EXISTS(BEEPER))
 
   #define HAS_MOTOR_CURRENT_PWM (PIN_EXISTS(MOTOR_CURRENT_PWM_XY) || PIN_EXISTS(MOTOR_CURRENT_PWM_Z) || PIN_EXISTS(MOTOR_CURRENT_PWM_E))
 
   #define HAS_TEMP_HOTEND (HAS_TEMP_0 || ENABLED(HEATER_0_USES_MAX6675))
-
-  #define HAS_THERMALLY_PROTECTED_BED (HAS_TEMP_BED && HAS_HEATER_BED && ENABLED(THERMAL_PROTECTION_BED))
 
   /**
    * This value is used by M109 when trying to calculate a ballpark safe margin
@@ -495,7 +375,7 @@
    * Helper Macros for heaters and extruder fan
    */
   #define WRITE_HEATER_0P(v) WRITE(HEATER_0_PIN, v)
-  #if HOTENDS > 1 || ENABLED(HEATERS_PARALLEL)
+  #if HOTENDS > 1 
     #define WRITE_HEATER_1(v) WRITE(HEATER_1_PIN, v)
     #if HOTENDS > 2
       #define WRITE_HEATER_2(v) WRITE(HEATER_2_PIN, v)
@@ -504,11 +384,7 @@
       #endif
     #endif
   #endif
-  #if ENABLED(HEATERS_PARALLEL)
-    #define WRITE_HEATER_0(v) { WRITE_HEATER_0P(v); WRITE_HEATER_1(v); }
-  #else
-    #define WRITE_HEATER_0(v) WRITE_HEATER_0P(v)
-  #endif
+  #define WRITE_HEATER_0(v) WRITE_HEATER_0P(v)
   #if HAS_HEATER_BED
     #define WRITE_HEATER_BED(v) WRITE(HEATER_BED_PIN, v)
   #endif
@@ -537,103 +413,23 @@
     #define WRITE_FAN2(v) WRITE(FAN2_PIN, v)
   #endif
   #define WRITE_FAN_N(n, v) WRITE_FAN##n(v)
-
-  /**
-   * Servos and probes
-   */
-
-  #if HAS_SERVOS
-    #ifndef Z_ENDSTOP_SERVO_NR
-      #define Z_ENDSTOP_SERVO_NR -1
-    #endif
-  #endif
-
   #define PROBE_SELECTED (ENABLED(FIX_MOUNTED_PROBE) || ENABLED(Z_PROBE_ALLEN_KEY) || HAS_Z_SERVO_ENDSTOP || ENABLED(Z_PROBE_SLED))
 
   #define PROBE_PIN_CONFIGURED (HAS_Z_MIN_PROBE_PIN || (HAS_Z_MIN && ENABLED(Z_MIN_PROBE_USES_Z_MIN_ENDSTOP_PIN)))
-
-  #define HAS_BED_PROBE (PROBE_SELECTED && PROBE_PIN_CONFIGURED)
-
   #if ENABLED(Z_PROBE_ALLEN_KEY)
     #define PROBE_IS_TRIGGERED_WHEN_STOWED_TEST
   #endif
-
-  /**
-   * Bed Probe dependencies
-   */
-  #if HAS_BED_PROBE
-    #ifndef Z_PROBE_OFFSET_RANGE_MIN
-      #define Z_PROBE_OFFSET_RANGE_MIN -20
-    #endif
-    #ifndef Z_PROBE_OFFSET_RANGE_MAX
-      #define Z_PROBE_OFFSET_RANGE_MAX 20
-    #endif
-    #ifndef XY_PROBE_SPEED
-      #ifdef HOMING_FEEDRATE_XY
-        #define XY_PROBE_SPEED HOMING_FEEDRATE_XY
-      #else
-        #define XY_PROBE_SPEED 4000
-      #endif
-    #endif
-    #if Z_PROBE_TRAVEL_HEIGHT > Z_PROBE_DEPLOY_HEIGHT
-      #define _Z_PROBE_DEPLOY_HEIGHT Z_PROBE_TRAVEL_HEIGHT
-    #else
-      #define _Z_PROBE_DEPLOY_HEIGHT Z_PROBE_DEPLOY_HEIGHT
-    #endif
-  #else
-    #undef X_PROBE_OFFSET_FROM_EXTRUDER
-    #undef Y_PROBE_OFFSET_FROM_EXTRUDER
-    #undef Z_PROBE_OFFSET_FROM_EXTRUDER
-    #define X_PROBE_OFFSET_FROM_EXTRUDER 0
-    #define Y_PROBE_OFFSET_FROM_EXTRUDER 0
-    #define Z_PROBE_OFFSET_FROM_EXTRUDER 0
-  #endif
-
-  /**
-   * Delta radius/rod trimmers
-   */
-  #if ENABLED(DELTA)
-    #ifndef DELTA_RADIUS_TRIM_TOWER_1
-      #define DELTA_RADIUS_TRIM_TOWER_1 0.0
-    #endif
-    #ifndef DELTA_RADIUS_TRIM_TOWER_2
-      #define DELTA_RADIUS_TRIM_TOWER_2 0.0
-    #endif
-    #ifndef DELTA_RADIUS_TRIM_TOWER_3
-      #define DELTA_RADIUS_TRIM_TOWER_3 0.0
-    #endif
-    #ifndef DELTA_DIAGONAL_ROD_TRIM_TOWER_1
-      #define DELTA_DIAGONAL_ROD_TRIM_TOWER_1 0.0
-    #endif
-    #ifndef DELTA_DIAGONAL_ROD_TRIM_TOWER_2
-      #define DELTA_DIAGONAL_ROD_TRIM_TOWER_2 0.0
-    #endif
-    #ifndef DELTA_DIAGONAL_ROD_TRIM_TOWER_3
-      #define DELTA_DIAGONAL_ROD_TRIM_TOWER_3 0.0
-    #endif
-    #if ENABLED(AUTO_BED_LEVELING_GRID)
-      #define DELTA_BED_LEVELING_GRID
-    #endif
-  #endif
-
-  /**
-   * When not using other bed leveling...
-   */
-  #if ENABLED(AUTO_BED_LEVELING_FEATURE) && DISABLED(AUTO_BED_LEVELING_GRID) && DISABLED(DELTA_BED_LEVELING_GRID)
-    #define AUTO_BED_LEVELING_3POINT
-  #endif
+  #undef X_PROBE_OFFSET_FROM_EXTRUDER
+  #undef Y_PROBE_OFFSET_FROM_EXTRUDER
+  #undef Z_PROBE_OFFSET_FROM_EXTRUDER
+  #define X_PROBE_OFFSET_FROM_EXTRUDER 0
+  #define Y_PROBE_OFFSET_FROM_EXTRUDER 0
+  #define Z_PROBE_OFFSET_FROM_EXTRUDER 0
 
   /**
    * Buzzer/Speaker
    */
-  #if ENABLED(LCD_USE_I2C_BUZZER)
-    #ifndef LCD_FEEDBACK_FREQUENCY_HZ
-      #define LCD_FEEDBACK_FREQUENCY_HZ 1000
-    #endif
-    #ifndef LCD_FEEDBACK_FREQUENCY_DURATION_MS
-      #define LCD_FEEDBACK_FREQUENCY_DURATION_MS 100
-    #endif
-  #elif PIN_EXISTS(BEEPER)
+  #if PIN_EXISTS(BEEPER)
     #ifndef LCD_FEEDBACK_FREQUENCY_HZ
       #define LCD_FEEDBACK_FREQUENCY_HZ 5000
     #endif

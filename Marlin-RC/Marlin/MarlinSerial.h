@@ -79,97 +79,91 @@
 
 
 #ifndef USBCON
-// Define constants and variables for buffering incoming serial data.  We're
-// using a ring buffer (I think), in which rx_buffer_head is the index of the
-// location to which to write the next incoming character and rx_buffer_tail
-// is the index of the location from which to read.
-// 256 is the max limit due to uint8_t head and tail. Use only powers of 2. (...,16,32,64,128,256)
-#ifndef RX_BUFFER_SIZE
-  #define RX_BUFFER_SIZE 128
-#endif
-#ifndef TX_BUFFER_SIZE
-  #define TX_BUFFER_SIZE 32
-#endif
-#if !((RX_BUFFER_SIZE == 256) ||(RX_BUFFER_SIZE == 128) ||(RX_BUFFER_SIZE == 64) ||(RX_BUFFER_SIZE == 32) ||(RX_BUFFER_SIZE == 16) ||(RX_BUFFER_SIZE == 8) ||(RX_BUFFER_SIZE == 4) ||(RX_BUFFER_SIZE == 2))
-  #error "RX_BUFFER_SIZE has to be a power of 2 and >= 2"
-#endif
-#if !((TX_BUFFER_SIZE == 256) ||(TX_BUFFER_SIZE == 128) ||(TX_BUFFER_SIZE == 64) ||(TX_BUFFER_SIZE == 32) ||(TX_BUFFER_SIZE == 16) ||(TX_BUFFER_SIZE == 8) ||(TX_BUFFER_SIZE == 4) ||(TX_BUFFER_SIZE == 2) ||(TX_BUFFER_SIZE == 0))
-  #error TX_BUFFER_SIZE has to be a power of 2 or 0
-#endif
+  // Define constants and variables for buffering incoming serial data.  We're
+  // using a ring buffer (I think), in which rx_buffer_head is the index of the
+  // location to which to write the next incoming character and rx_buffer_tail
+  // is the index of the location from which to read.
+  // 256 is the max limit due to uint8_t head and tail. Use only powers of 2. (...,16,32,64,128,256)
+  #ifndef RX_BUFFER_SIZE
+    #define RX_BUFFER_SIZE 128
+  #endif
+  #ifndef TX_BUFFER_SIZE
+    #define TX_BUFFER_SIZE 32
+  #endif
+  #if !((RX_BUFFER_SIZE == 256) ||(RX_BUFFER_SIZE == 128) ||(RX_BUFFER_SIZE == 64) ||(RX_BUFFER_SIZE == 32) ||(RX_BUFFER_SIZE == 16) ||(RX_BUFFER_SIZE == 8) ||(RX_BUFFER_SIZE == 4) ||(RX_BUFFER_SIZE == 2))
+    #error "RX_BUFFER_SIZE has to be a power of 2 and >= 2"
+  #endif
+  #if !((TX_BUFFER_SIZE == 256) ||(TX_BUFFER_SIZE == 128) ||(TX_BUFFER_SIZE == 64) ||(TX_BUFFER_SIZE == 32) ||(TX_BUFFER_SIZE == 16) ||(TX_BUFFER_SIZE == 8) ||(TX_BUFFER_SIZE == 4) ||(TX_BUFFER_SIZE == 2) ||(TX_BUFFER_SIZE == 0))
+    #error TX_BUFFER_SIZE has to be a power of 2 or 0
+  #endif
 
-struct ring_buffer_r {
-  unsigned char buffer[RX_BUFFER_SIZE];
-  volatile uint8_t head;
-  volatile uint8_t tail;
-};
-
-#if TX_BUFFER_SIZE > 0
-  struct ring_buffer_t {
-    unsigned char buffer[TX_BUFFER_SIZE];
+  struct ring_buffer_r {
+    unsigned char buffer[RX_BUFFER_SIZE];
     volatile uint8_t head;
     volatile uint8_t tail;
   };
-#endif
 
-#if UART_PRESENT(SERIAL_PORT)
-  extern ring_buffer_r rx_buffer;
   #if TX_BUFFER_SIZE > 0
-    extern ring_buffer_t tx_buffer;
+    struct ring_buffer_t {
+      unsigned char buffer[TX_BUFFER_SIZE];
+      volatile uint8_t head;
+      volatile uint8_t tail;
+    };
   #endif
-#endif
 
-#if ENABLED(EMERGENCY_PARSER)
-  #include "language.h"
-  void emergency_parser(unsigned char c);
-#endif
-
-class MarlinSerial { //: public Stream
-
-  public:
-    MarlinSerial();
-    void begin(long);
-    void end();
-    int peek(void);
-    int read(void);
-    void flush(void);
-    uint8_t available(void);
-    void checkRx(void);
-    void write(uint8_t c);
+  #if UART_PRESENT(SERIAL_PORT)
+    extern ring_buffer_r rx_buffer;
     #if TX_BUFFER_SIZE > 0
-      uint8_t availableForWrite(void);
-      void flushTX(void);
+      extern ring_buffer_t tx_buffer;
     #endif
+  #endif
+  class MarlinSerial { //: public Stream
 
-  private:
-    void printNumber(unsigned long, uint8_t);
-    void printFloat(double, uint8_t);
+    public:
+      MarlinSerial();
+      void begin(long);
+      void end();
+      int peek(void);
+      int read(void);
+      void flush(void);
+      uint8_t available(void);
+      void checkRx(void);
+      void write(uint8_t c);
+      #if TX_BUFFER_SIZE > 0
+        uint8_t availableForWrite(void);
+        void flushTX(void);
+      #endif
 
-  public:
-    FORCE_INLINE void write(const char* str) { while (*str) write(*str++); }
-    FORCE_INLINE void write(const uint8_t* buffer, size_t size) { while (size--) write(*buffer++); }
-    FORCE_INLINE void print(const String& s) { for (int i = 0; i < (int)s.length(); i++) write(s[i]); }
-    FORCE_INLINE void print(const char* str) { write(str); }
+    private:
+      void printNumber(unsigned long, uint8_t);
+      void printFloat(double, uint8_t);
 
-    void print(char, int = BYTE);
-    void print(unsigned char, int = BYTE);
-    void print(int, int = DEC);
-    void print(unsigned int, int = DEC);
-    void print(long, int = DEC);
-    void print(unsigned long, int = DEC);
-    void print(double, int = 2);
+    public:
+      FORCE_INLINE void write(const char* str) { while (*str) write(*str++); }
+      FORCE_INLINE void write(const uint8_t* buffer, size_t size) { while (size--) write(*buffer++); }
+      FORCE_INLINE void print(const String& s) { for (int i = 0; i < (int)s.length(); i++) write(s[i]); }
+      FORCE_INLINE void print(const char* str) { write(str); }
 
-    void println(const String& s);
-    void println(const char[]);
-    void println(char, int = BYTE);
-    void println(unsigned char, int = BYTE);
-    void println(int, int = DEC);
-    void println(unsigned int, int = DEC);
-    void println(long, int = DEC);
-    void println(unsigned long, int = DEC);
-    void println(double, int = 2);
-    void println(void);
-};
+      void print(char, int = BYTE);
+      void print(unsigned char, int = BYTE);
+      void print(int, int = DEC);
+      void print(unsigned int, int = DEC);
+      void print(long, int = DEC);
+      void print(unsigned long, int = DEC);
+      void print(double, int = 2);
 
-extern MarlinSerial customizedSerial;
+      void println(const String& s);
+      void println(const char[]);
+      void println(char, int = BYTE);
+      void println(unsigned char, int = BYTE);
+      void println(int, int = DEC);
+      void println(unsigned int, int = DEC);
+      void println(long, int = DEC);
+      void println(unsigned long, int = DEC);
+      void println(double, int = 2);
+      void println(void);
+  };
+
+  extern MarlinSerial customizedSerial;
 #endif // !USBCON
 #endif

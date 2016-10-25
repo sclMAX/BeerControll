@@ -44,12 +44,6 @@
 #include "stepper_indirection.h"
 
 #include "MarlinConfig.h"
-
-#if ENABLED(HAVE_TMCDRIVER)
-  #include <SPI.h>
-  #include <TMC26XStepper.h>
-#endif
-
 // Stepper objects of TMC steppers used
 #if ENABLED(X_IS_TMC)
   TMC26XStepper stepperX(200, X_ENABLE_PIN, X_STEP_PIN, X_DIR_PIN, X_MAX_CURRENT, X_SENSE_RESISTOR);
@@ -81,52 +75,6 @@
 #if ENABLED(E3_IS_TMC)
   TMC26XStepper stepperE3(200, E3_ENABLE_PIN, E3_STEP_PIN, E3_DIR_PIN, E3_MAX_CURRENT, E3_SENSE_RESISTOR);
 #endif
-
-#if ENABLED(HAVE_TMCDRIVER)
-void tmc_init() {
-  #if ENABLED(X_IS_TMC)
-    stepperX.setMicrosteps(X_MICROSTEPS);
-    stepperX.start();
-  #endif
-  #if ENABLED(X2_IS_TMC)
-    stepperX2.setMicrosteps(X2_MICROSTEPS);
-    stepperX2.start();
-  #endif
-  #if ENABLED(Y_IS_TMC)
-    stepperY.setMicrosteps(Y_MICROSTEPS);
-    stepperY.start();
-  #endif
-  #if ENABLED(Y2_IS_TMC)
-    stepperY2.setMicrosteps(Y2_MICROSTEPS);
-    stepperY2.start();
-  #endif
-  #if ENABLED(Z_IS_TMC)
-    stepperZ.setMicrosteps(Z_MICROSTEPS);
-    stepperZ.start();
-  #endif
-  #if ENABLED(Z2_IS_TMC)
-    stepperZ2.setMicrosteps(Z2_MICROSTEPS);
-    stepperZ2.start();
-  #endif
-  #if ENABLED(E0_IS_TMC)
-    stepperE0.setMicrosteps(E0_MICROSTEPS);
-    stepperE0.start();
-  #endif
-  #if ENABLED(E1_IS_TMC)
-    stepperE1.setMicrosteps(E1_MICROSTEPS);
-    stepperE1.start();
-  #endif
-  #if ENABLED(E2_IS_TMC)
-    stepperE2.setMicrosteps(E2_MICROSTEPS);
-    stepperE2.start();
-  #endif
-  #if ENABLED(E3_IS_TMC)
-    stepperE3.setMicrosteps(E3_MICROSTEPS);
-    stepperE3.start();
-  #endif
-}
-#endif
-
 // L6470 Stepper objects
 #if ENABLED(X_IS_L6470)
   L6470 stepperX(X_ENABLE_PIN);
