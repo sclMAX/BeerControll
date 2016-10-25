@@ -4,6 +4,7 @@
 #include "termistor.h"
 #include "quemador.h"
 
+#define KILL_PIN 41 //[RAMPS14-SMART-ADAPTER]
 #define LCD_PINS_RS 16
 #define LCD_PINS_ENABLE 17
 #define LCD_PINS_D4 23
@@ -22,9 +23,12 @@ U8GLIB_ST7920_128X64_1X u8g(LCD_PINS_D4, LCD_PINS_ENABLE, LCD_PINS_RS);
 
 Quemador QLicor, QMacerador;
 TermistorNtc TLicor, TMacerador;
-int LicorTO = 0;
+int LicorTO = 15;
 long Etapas = 0;
 
+//prueba encoder
+int n = LOW;
+//fin
 void setup()
 {
   QLicor.init(QUEMADOR_LICOR);
@@ -33,9 +37,7 @@ void setup()
   TMacerador.init(SENSOR_MACERADOR);
   // Timer1.initialize(30 * 1000 * 1000);
   //  Timer1.attachInterrupt(ISR_PrimeraEtapa);
-  pinMode(BTN_EN1, INPUT);
-  pinMode(BTN_EN2, INPUT);
-  pinMode(BTN_ENC, INPUT);
+  pinMode(KILL_PIN, INPUT);
   Serial.begin(BAUD_RATE);
 }
 
@@ -61,26 +63,26 @@ void ISR_PrimeraEtapa()
 }
 void loop()
 {
-  int valor = digitalRead(BTN_EN1);
-  Serial.println("BTN_EN1:" + String(valor));
-  valor = digitalRead(BTN_EN2);
-  Serial.println("BTN_EN2:" + String(valor));
-  valor = digitalRead(BTN_ENC);
-  Serial.println("BTN_ENC:" + String(valor));
+  ///PRUEBAS******************
+  n = digitalRead(KILL_PIN);
+  if (n > 0 )
+  {
+    digitalWrite(BEEPER, HIGH);
+  }
+  else
+  {
+    digitalWrite(BEEPER, LOW);
+  }
+  Serial.println("n:" + String(n));
+
+  //*****************************
+
   TLicor.update();
   TMacerador.update();
-  if (Serial.available() > 0)
-  {
-    int d = Serial.parseInt();
-    if (d > 0)
-    {
-      LicorTO = d;
-    }
-    Serial.println("RECIVIDO: " + String(d));
-  }
   if (TLicor.getTemp() < LicorTO)
   {
     QLicor.prender();
+  //  digitalWrite(BEEPER, HIGH);
   }
   else
   {
@@ -91,7 +93,7 @@ void loop()
   {
     draw();
   } while (u8g.nextPage());
-  enviarSerie();
+ // enviarSerie();
   delay(TIEMPO_MUESTREO);
 }
 
@@ -104,6 +106,6 @@ void draw(void)
   u8g.drawStr(0, 10, r.c_str());
   tl = TMacerador.getTemp();
   r = "TM:" + String(tl) + " C";
-  u8g.drawStr(0, 25,r.c_str());
+  u8g.drawStr(0, 25, r.c_str());
   u8g.drawStr(0, 40, "BC v0.1 by MAX");
 }

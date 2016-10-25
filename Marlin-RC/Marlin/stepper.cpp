@@ -664,10 +664,6 @@ void Stepper::init()
 #if ENABLED(HAVE_TMCDRIVER)
   tmc_init();
 #endif
-// initialise L6470 Steppers
-#if ENABLED(HAVE_L6470DRIVER)
-  L6470_init();
-#endif
 
 // Initialize Dir Pins
 #if HAS_X_DIR

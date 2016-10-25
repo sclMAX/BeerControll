@@ -13,7 +13,7 @@ public:
 private:
   static const long R_NOMINAL = 100000;    //Resistencia nominal
   static const float T_NOMINAL = 25;       //Temperatura nominal
-  static const int NUM_MUESTRAS = 5;       // Nro. de muestras.
+  static const int NUM_MUESTRAS = 10;       // Nro. de muestras.
   static const long SERIESRESISTOR = 4700; // Valor de Resistencias en serie.
   static const float T1 = 0 + 273.15;      // [ºK]  0ºC = 273.15ºK    Temperatura del 1º punto del test (en grados Kelvin)
   static const float T2 = 100 + 273.15;    // [ºK]   100ºC = 373.15ºK   Temperatura del 2º punto del test (en grados Kelvin)
