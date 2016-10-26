@@ -36,14 +36,9 @@
 #ifdef K1 // Defined in Configuration.h in the PID settings
   #define K2 (1.0-K1)
 #endif
+static void* heater_ttbl_map[HOTENDS] = ARRAY_BY_HOTENDS((void*)HEATER_0_TEMPTABLE, (void*)HEATER_1_TEMPTABLE, (void*)HEATER_2_TEMPTABLE, (void*)HEATER_3_TEMPTABLE);
+static uint8_t heater_ttbllen_map[HOTENDS] = ARRAY_BY_HOTENDS(HEATER_0_TEMPTABLE_LEN, HEATER_1_TEMPTABLE_LEN, HEATER_2_TEMPTABLE_LEN, HEATER_3_TEMPTABLE_LEN);
 
-#if ENABLED(TEMP_SENSOR_1_AS_REDUNDANT)
-  static void* heater_ttbl_map[2] = {(void*)HEATER_0_TEMPTABLE, (void*)HEATER_1_TEMPTABLE };
-  static uint8_t heater_ttbllen_map[2] = { HEATER_0_TEMPTABLE_LEN, HEATER_1_TEMPTABLE_LEN };
-#else
-  static void* heater_ttbl_map[HOTENDS] = ARRAY_BY_HOTENDS((void*)HEATER_0_TEMPTABLE, (void*)HEATER_1_TEMPTABLE, (void*)HEATER_2_TEMPTABLE, (void*)HEATER_3_TEMPTABLE);
-  static uint8_t heater_ttbllen_map[HOTENDS] = ARRAY_BY_HOTENDS(HEATER_0_TEMPTABLE_LEN, HEATER_1_TEMPTABLE_LEN, HEATER_2_TEMPTABLE_LEN, HEATER_3_TEMPTABLE_LEN);
-#endif
 
 Temperature thermalManager;
 
@@ -55,11 +50,6 @@ int   Temperature::current_temperature_raw[HOTENDS] = { 0 },
       Temperature::target_temperature[HOTENDS] = { 0 },
       Temperature::current_temperature_bed_raw = 0,
       Temperature::target_temperature_bed = 0;
-
-#if ENABLED(TEMP_SENSOR_1_AS_REDUNDANT)
-  float Temperature::redundant_temperature = 0.0;
-#endif
-
 unsigned char Temperature::soft_pwm_bed;
 
 #if ENABLED(PIDTEMP)
@@ -67,30 +57,14 @@ unsigned char Temperature::soft_pwm_bed;
     float Temperature::Kp[HOTENDS] = ARRAY_BY_HOTENDS1(DEFAULT_Kp),
           Temperature::Ki[HOTENDS] = ARRAY_BY_HOTENDS1((DEFAULT_Ki) * (PID_dT)),
           Temperature::Kd[HOTENDS] = ARRAY_BY_HOTENDS1((DEFAULT_Kd) / (PID_dT));
-    #if ENABLED(PID_EXTRUSION_SCALING)
-      float Temperature::Kc[HOTENDS] = ARRAY_BY_HOTENDS1(DEFAULT_Kc);
-    #endif
   #else
     float Temperature::Kp = DEFAULT_Kp,
           Temperature::Ki = (DEFAULT_Ki) * (PID_dT),
           Temperature::Kd = (DEFAULT_Kd) / (PID_dT);
-    #if ENABLED(PID_EXTRUSION_SCALING)
-      float Temperature::Kc = DEFAULT_Kc;
-    #endif
   #endif
-#endif
-#if ENABLED(PREVENT_DANGEROUS_EXTRUDE)
-  bool Temperature::allow_cold_extrude = false;
-  float Temperature::extrude_min_temp = EXTRUDE_MINTEMP;
 #endif
 
 // private:
-
-#if ENABLED(TEMP_SENSOR_1_AS_REDUNDANT)
-  int Temperature::redundant_temperature_raw = 0;
-  float Temperature::redundant_temperature = 0.0;
-#endif
-
 volatile bool Temperature::temp_meas_ready = false;
 
 #if ENABLED(PIDTEMP)
@@ -99,14 +73,6 @@ volatile bool Temperature::temp_meas_ready = false;
         Temperature::pTerm[HOTENDS],
         Temperature::iTerm[HOTENDS],
         Temperature::dTerm[HOTENDS];
-
-  #if ENABLED(PID_EXTRUSION_SCALING)
-    float Temperature::cTerm[HOTENDS];
-    long Temperature::last_e_position;
-    long Temperature::lpq[LPQ_MAX_LEN];
-    int Temperature::lpq_ptr = 0;
-  #endif
-
   float Temperature::pid_error[HOTENDS],
         Temperature::temp_iState_min[HOTENDS],
         Temperature::temp_iState_max[HOTENDS];
@@ -388,9 +354,6 @@ Temperature::Temperature() { }
 
 void Temperature::updatePID() {
   #if ENABLED(PIDTEMP)
-    #if ENABLED(PID_EXTRUSION_SCALING)
-      last_e_position = 0;
-    #endif
     HOTEND_LOOP() {
       temp_iState_max[e] = (PID_INTEGRAL_DRIVE_MAX) / PID_PARAM(Ki, e);
     }
@@ -500,24 +463,6 @@ float Temperature::get_pid_output(int e) {
         iTerm[HOTEND_INDEX] = PID_PARAM(Ki, HOTEND_INDEX) * temp_iState[HOTEND_INDEX];
 
         pid_output = pTerm[HOTEND_INDEX] + iTerm[HOTEND_INDEX] - dTerm[HOTEND_INDEX];
-
-        #if ENABLED(PID_EXTRUSION_SCALING)
-          cTerm[HOTEND_INDEX] = 0;
-          if (_HOTEND_TEST) {
-            long e_position = stepper.position(E_AXIS);
-            if (e_position > last_e_position) {
-              lpq[lpq_ptr] = e_position - last_e_position;
-              last_e_position = e_position;
-            }
-            else {
-              lpq[lpq_ptr] = 0;
-            }
-            if (++lpq_ptr >= lpq_len) lpq_ptr = 0;
-            cTerm[HOTEND_INDEX] = (lpq[lpq_ptr] * planner.steps_to_mm[E_AXIS]) * PID_PARAM(Kc, HOTEND_INDEX);
-            pid_output += cTerm[HOTEND_INDEX];
-          }
-        #endif // PID_EXTRUSION_SCALING
-
         if (pid_output > PID_MAX) {
           if (pid_error[HOTEND_INDEX] > 0) temp_iState[HOTEND_INDEX] -= pid_error[HOTEND_INDEX]; // conditional un-integration
           pid_output = PID_MAX;
@@ -539,9 +484,6 @@ float Temperature::get_pid_output(int e) {
       SERIAL_ECHOPAIR(MSG_PID_DEBUG_PTERM, pTerm[HOTEND_INDEX]);
       SERIAL_ECHOPAIR(MSG_PID_DEBUG_ITERM, iTerm[HOTEND_INDEX]);
       SERIAL_ECHOPAIR(MSG_PID_DEBUG_DTERM, dTerm[HOTEND_INDEX]);
-      #if ENABLED(PID_EXTRUSION_SCALING)
-        SERIAL_ECHOPAIR(MSG_PID_DEBUG_CTERM, cTerm[HOTEND_INDEX]);
-      #endif
       SERIAL_EOL;
     #endif //PID_DEBUG
 
@@ -583,13 +525,6 @@ void Temperature::manage_heater() {
 
     // Check if temperature is within the correct range
     soft_pwm[e] = (current_temperature[e] > minttemp[e] || is_preheating(e)) && current_temperature[e] < maxttemp[e] ? (int)pid_output >> 1 : 0;
-
-    #if ENABLED(TEMP_SENSOR_1_AS_REDUNDANT)
-      if (fabs(current_temperature[0] - redundant_temperature) > MAX_REDUNDANT_TEMP_SENSOR_DIFF) {
-        _temp_error(0, PSTR(MSG_REDUNDANCY), PSTR(MSG_ERR_REDUNDANT_TEMP));
-      }
-    #endif
-
   } // Hotends Loop
 
   #if HAS_AUTO_FAN
@@ -616,11 +551,7 @@ void Temperature::manage_heater() {
 // Derived from RepRap FiveD extruder::getTemperature()
 // For hot end temperature measurement.
 float Temperature::analog2temp(int raw, uint8_t e) {
-  #if ENABLED(TEMP_SENSOR_1_AS_REDUNDANT)
-    if (e > HOTENDS)
-  #else
-    if (e >= HOTENDS)
-  #endif
+  if (e >= HOTENDS)
     {
       SERIAL_ERROR_START;
       SERIAL_ERROR((int)e);
@@ -704,11 +635,7 @@ void Temperature::updateTemperaturesFromRawValues() {
     current_temperature[e] = Temperature::analog2temp(current_temperature_raw[e], e);
   }
   current_temperature_bed = Temperature::analog2tempBed(current_temperature_bed_raw);
-  #if ENABLED(TEMP_SENSOR_1_AS_REDUNDANT)
-    redundant_temperature = Temperature::analog2temp(redundant_temperature_raw, 1);
-  #endif
-
-  #if ENABLED(USE_WATCHDOG)
+   #if ENABLED(USE_WATCHDOG)
     // Reset the watchdog after we know we have a temperature measurement.
     watchdog_reset();
   #endif
@@ -737,16 +664,8 @@ void Temperature::init() {
     #if ENABLED(PIDTEMP)
       temp_iState_min[e] = 0.0;
       temp_iState_max[e] = (PID_INTEGRAL_DRIVE_MAX) / PID_PARAM(Ki, e);
-      #if ENABLED(PID_EXTRUSION_SCALING)
-        last_e_position = 0;
-      #endif
     #endif //PIDTEMP
   }
-
-  #if ENABLED(PIDTEMP) && ENABLED(PID_EXTRUSION_SCALING)
-    last_e_position = 0;
-  #endif
-
   #if HAS_HEATER_0
     SET_OUTPUT(HEATER_0_PIN);
   #endif
@@ -890,10 +809,8 @@ void Temperature::init() {
 void Temperature::disable_all_heaters() {
   HOTEND_LOOP() setTargetHotend(0, e);
   setTargetBed(0);
-
   // If all heaters go down then for sure our print job has stopped
   print_job_timer.stop();
-
   #define DISABLE_HEATER(NR) { \
     setTargetHotend(0, NR); \
     soft_pwm[NR] = 0; \
@@ -983,10 +900,8 @@ void Temperature::disable_all_heaters() {
       max6675_temp = 4000; // thermocouple open
     else
       max6675_temp >>= MAX6675_DISCARD_BITS;
-
     return (int)max6675_temp;
   }
-
 #endif //HEATER_0_USES_MAX6675
 
 /**
@@ -997,11 +912,7 @@ void Temperature::set_current_temp_raw() {
     current_temperature_raw[0] = raw_temp_value[0];
   #endif
   #if HAS_TEMP_1
-    #if ENABLED(TEMP_SENSOR_1_AS_REDUNDANT)
-      redundant_temperature_raw = raw_temp_value[1];
-    #else
-      current_temperature_raw[1] = raw_temp_value[1];
-    #endif
+    current_temperature_raw[1] = raw_temp_value[1];
     #if HAS_TEMP_2
       current_temperature_raw[2] = raw_temp_value[2];
       #if HAS_TEMP_3

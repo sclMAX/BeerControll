@@ -173,7 +173,6 @@
 #define MSG_SD_CANT_ENTER_SUBDIR            "Cannot enter subdir: "
 
 #define MSG_STEPPER_TOO_HIGH                "Steprate too high: "
-#define MSG_ENDSTOPS_HIT                    "endstops hit: "
 #define MSG_ERR_COLD_EXTRUDE_STOP           " cold extrusion prevented"
 #define MSG_ERR_LONG_EXTRUDE_STOP           " too long extrusion prevented"
 #define MSG_TOO_COLD_FOR_M600               "M600 Hotend too cold to change filament"

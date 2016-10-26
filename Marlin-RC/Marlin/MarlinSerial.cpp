@@ -1,7 +1,4 @@
 #include "MarlinSerial.h"
-
-#include "stepper.h"
-
 #include "Marlin.h"
 // this next line disables the entire HardwareSerial.cpp,
 // this is so I can support Attiny series and any other chip without a UART

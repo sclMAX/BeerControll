@@ -1,41 +1,12 @@
 /**
- * Marlin 3D Printer Firmware
- * Copyright (C) 2016 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
- *
- * Based on Sprinter and grbl.
- * Copyright (C) 2011 Camiel Gubbels / Erik van der Zalm
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- */
-
-/**
  * temperature.h - temperature controller
  */
 
 #ifndef TEMPERATURE_H
 #define TEMPERATURE_H
-
-#include "planner.h"
 #include "thermistortables.h"
 
 #include "MarlinConfig.h"
-
-#if ENABLED(PID_EXTRUSION_SCALING)
-  #include "stepper.h"
-#endif
-
 #ifndef SOFT_PWM_SCALE
   #define SOFT_PWM_SCALE 0
 #endif
@@ -60,11 +31,6 @@ class Temperature {
                  target_temperature[HOTENDS],
                  current_temperature_bed_raw,
                  target_temperature_bed;
-
-    #if ENABLED(TEMP_SENSOR_1_AS_REDUNDANT)
-      static float redundant_temperature;
-    #endif
-
     static unsigned char soft_pwm_bed;
     #if ENABLED(PIDTEMP)
       #define PID_dT ((OVERSAMPLENR * 12.0)/(F_CPU / 64.0 / 256.0))
@@ -75,17 +41,11 @@ class Temperature {
       #if ENABLED(PID_PARAMS_PER_HOTEND) && HOTENDS > 1
 
         static float Kp[HOTENDS], Ki[HOTENDS], Kd[HOTENDS];
-        #if ENABLED(PID_EXTRUSION_SCALING)
-          static float Kc[HOTENDS];
-        #endif
         #define PID_PARAM(param, h) Temperature::param[h]
 
       #else
 
         static float Kp, Ki, Kd;
-        #if ENABLED(PID_EXTRUSION_SCALING)
-          static float Kc;
-        #endif
         #define PID_PARAM(param, h) Temperature::param
 
       #endif // PID_PARAMS_PER_HOTEND
@@ -97,42 +57,17 @@ class Temperature {
       #define unscalePID_d(d) ( (d) * PID_dT )
 
     #endif
-    #if ENABLED(PREVENT_DANGEROUS_EXTRUDE)
-      static bool allow_cold_extrude;
-      static float extrude_min_temp;
-      static bool tooColdToExtrude(uint8_t e) {
-        #if HOTENDS == 1
-          UNUSED(e);
-        #endif
-        return allow_cold_extrude ? false : degHotend(HOTEND_INDEX) < extrude_min_temp;
-      }
-    #else
-      static bool tooColdToExtrude(uint8_t e) { UNUSED(e); return false; }
-    #endif
-
+    static bool tooColdToExtrude(uint8_t e) { UNUSED(e); return false; }
+    
   private:
 
-    #if ENABLED(TEMP_SENSOR_1_AS_REDUNDANT)
-      static int redundant_temperature_raw;
-      static float redundant_temperature;
-    #endif
-
     static volatile bool temp_meas_ready;
-
     #if ENABLED(PIDTEMP)
       static float temp_iState[HOTENDS],
                    temp_dState[HOTENDS],
                    pTerm[HOTENDS],
                    iTerm[HOTENDS],
                    dTerm[HOTENDS];
-
-      #if ENABLED(PID_EXTRUSION_SCALING)
-        static float cTerm[HOTENDS];
-        static long last_e_position;
-        static long lpq[LPQ_MAX_LEN];
-        static int lpq_ptr;
-      #endif
-
       static float pid_error[HOTENDS],
                    temp_iState_min[HOTENDS],
                    temp_iState_max[HOTENDS];
@@ -305,17 +240,7 @@ class Temperature {
      * Update the temp manager when PID values change
      */
     static void updatePID();
-
-    static void autotempShutdown() {
-      #if ENABLED(AUTOTEMP)
-        if (planner.autotemp_enabled) {
-          planner.autotemp_enabled = false;
-          if (degTargetHotend(EXTRUDER_IDX) > planner.autotemp_min)
-            setTargetHotend(0, EXTRUDER_IDX);
-        }
-      #endif
-    }
-
+    
   private:
 
     static void set_current_temp_raw();

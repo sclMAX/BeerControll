@@ -307,14 +307,9 @@ FORCE_INLINE void _draw_axis_label(AxisEnum axis, const char *pstr, bool blink) 
   if (blink)
     lcd_printPGM(pstr);
   else {
-    if (!axis_homed[axis])
-      lcd_printPGM(PSTR("?"));
+    if (0)
+      lcd_printPGM(PSTR("?MOD?"));
     else {
-      #if DISABLED(DISABLE_REDUCED_ACCURACY_WARNING)
-        if (!axis_known_position[axis])
-          lcd_printPGM(PSTR(" "));
-        else
-      #endif
       lcd_printPGM(pstr);
     }
   }
@@ -322,9 +317,7 @@ FORCE_INLINE void _draw_axis_label(AxisEnum axis, const char *pstr, bool blink) 
 
 static void lcd_implementation_status_screen() {
   u8g.setColorIndex(1); // black on white
-
   bool blink = lcd_blink();
-
   // Symbols menu graphics, animated fan
   u8g.drawBitmapP(9, 1, STATUS_SCREENBYTEWIDTH, STATUS_SCREENHEIGHT,
     #if HAS_FAN0
@@ -366,7 +359,7 @@ static void lcd_implementation_status_screen() {
     u8g.drawBox(0, 30, LCD_PIXEL_WIDTH, 9);
   #endif
   u8g.setColorIndex(0); // white on black
-
+/*
   u8g.setPrintPos(2, XYZ_BASELINE);
   _draw_axis_label(X_AXIS, PSTR(MSG_X), blink);
   u8g.setPrintPos(10, XYZ_BASELINE);
@@ -380,10 +373,10 @@ static void lcd_implementation_status_screen() {
   u8g.setPrintPos(83, XYZ_BASELINE);
   _draw_axis_label(Z_AXIS, PSTR(MSG_Z), blink);
   u8g.setPrintPos(91, XYZ_BASELINE);
-  lcd_print(ftostr52sp(current_position[Z_AXIS] + 0.00001));
+  lcd_print(ftostr52sp(current_position[Z_AXIS] + 0.00001));*/
 
   u8g.setColorIndex(1); // black on white
-
+/*
   // Feedrate
   lcd_setFont(FONT_MENU);
   u8g.setPrintPos(3, 49);
@@ -392,7 +385,7 @@ static void lcd_implementation_status_screen() {
   lcd_setFont(FONT_STATUSMENU);
   u8g.setPrintPos(12, 49);
   lcd_print(itostr3(feedrate_percentage));
-  lcd_print('%');
+  lcd_print('%');*/
 
   // Status line
   #if ENABLED(USE_SMALL_INFOFONT)

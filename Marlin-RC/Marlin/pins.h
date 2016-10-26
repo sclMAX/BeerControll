@@ -278,17 +278,6 @@
   #define Z2_E_INDEX Y2_E_INDEX
 #endif
 
-// The Z2 axis, if any, should be the next open extruder port
-#if ENABLED(Z_DUAL_STEPPER_DRIVERS)
-  #ifndef Z2_STEP_PIN
-    #define Z2_STEP_PIN   _EPIN(Z2_E_INDEX, STEP)
-    #define Z2_DIR_PIN    _EPIN(Z2_E_INDEX, DIR)
-    #define Z2_ENABLE_PIN _EPIN(Z2_E_INDEX, ENABLE)
-  #endif
-  #undef _Z2_PINS
-  #define _Z2_PINS Z2_STEP_PIN, Z2_DIR_PIN, Z2_ENABLE_PIN,
-#endif
-
 #define SENSITIVE_PINS { 0, 1, \
     X_STEP_PIN, X_DIR_PIN, X_ENABLE_PIN, X_MIN_PIN, X_MAX_PIN, \
     Y_STEP_PIN, Y_DIR_PIN, Y_ENABLE_PIN, Y_MIN_PIN, Y_MAX_PIN, \

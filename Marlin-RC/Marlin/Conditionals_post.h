@@ -6,165 +6,18 @@
 #ifndef CONDITIONALS_POST_H
 #define CONDITIONALS_POST_H
   #define EMERGENCY_PARSER_CAPABILITIES ""
-
-  /**
-   * Set ENDSTOPPULLUPS for unused endstop switches
-   */
-  #if ENABLED(ENDSTOPPULLUPS)
-    #if ENABLED(USE_XMAX_PLUG)
-      #define ENDSTOPPULLUP_XMAX
-    #endif
-    #if ENABLED(USE_YMAX_PLUG)
-      #define ENDSTOPPULLUP_YMAX
-    #endif
-    #if ENABLED(USE_ZMAX_PLUG)
-      #define ENDSTOPPULLUP_ZMAX
-    #endif
-    #if ENABLED(USE_XMIN_PLUG)
-      #define ENDSTOPPULLUP_XMIN
-    #endif
-    #if ENABLED(USE_YMIN_PLUG)
-      #define ENDSTOPPULLUP_YMIN
-    #endif
-    #if ENABLED(USE_ZMIN_PLUG)
-      #define ENDSTOPPULLUP_ZMIN
-    #endif
-    #if DISABLED(DISABLE_Z_MIN_PROBE_ENDSTOP)
-      #define ENDSTOPPULLUP_ZMIN_PROBE
-    #endif
-  #endif
-
-  /**
-   * Axis lengths
-   */
-  #define X_MAX_LENGTH (X_MAX_POS - (X_MIN_POS))
-  #define Y_MAX_LENGTH (Y_MAX_POS - (Y_MIN_POS))
-  #define Z_MAX_LENGTH (Z_MAX_POS - (Z_MIN_POS))
-
-  /**
-   * CoreXY and CoreXZ
-   */
-  #if ENABLED(COREXY)
-    #define CORE_AXIS_1 A_AXIS // XY from A + B
-    #define CORE_AXIS_2 B_AXIS
-    #define NORMAL_AXIS Z_AXIS
-  #elif ENABLED(COREXZ)
-    #define CORE_AXIS_1 A_AXIS // XZ from A + C
-    #define CORE_AXIS_2 C_AXIS
-    #define NORMAL_AXIS Y_AXIS
-  #elif ENABLED(COREYZ)
-    #define CORE_AXIS_1 B_AXIS // YZ from B + C
-    #define CORE_AXIS_2 C_AXIS
-    #define NORMAL_AXIS X_AXIS
-  #endif
-
-  /**
-   * SCARA
-   */
-  #if ENABLED(SCARA)
-    #undef SLOWDOWN
-    #define QUICK_HOME //SCARA needs Quickhome
-  #endif
-
-  /**
-   * Set the home position based on settings or manual overrides
-   */
-  #ifdef MANUAL_X_HOME_POS
-    #define X_HOME_POS MANUAL_X_HOME_POS
-  #elif ENABLED(BED_CENTER_AT_0_0)
-    #define X_HOME_POS ((X_MAX_LENGTH) * (X_HOME_DIR) * 0.5)    
-  #else
-    #define X_HOME_POS (X_HOME_DIR < 0 ? X_MIN_POS : X_MAX_POS)
-  #endif
-
-  #ifdef MANUAL_Y_HOME_POS
-    #define Y_HOME_POS MANUAL_Y_HOME_POS
-  #elif ENABLED(BED_CENTER_AT_0_0)
-    #define Y_HOME_POS ((Y_MAX_LENGTH) * (Y_HOME_DIR) * 0.5)
-  #else
-    #define Y_HOME_POS (Y_HOME_DIR < 0 ? Y_MIN_POS : Y_MAX_POS)
-  #endif
-
-  #ifdef MANUAL_Z_HOME_POS
-    #define Z_HOME_POS MANUAL_Z_HOME_POS
-  #else
-    #define Z_HOME_POS (Z_HOME_DIR < 0 ? Z_MIN_POS : Z_MAX_POS)
-  #endif
-
   /**
    * Auto Bed Leveling and Z Probe Repeatability Test
    */
   #define HAS_PROBING_PROCEDURE (ENABLED(Z_MIN_PROBE_REPEATABILITY_TEST))
-
-  // Boundaries for probing based on set limits
-  #define MIN_PROBE_X (max(X_MIN_POS, X_MIN_POS + X_PROBE_OFFSET_FROM_EXTRUDER))
-  #define MAX_PROBE_X (min(X_MAX_POS, X_MAX_POS + X_PROBE_OFFSET_FROM_EXTRUDER))
-  #define MIN_PROBE_Y (max(Y_MIN_POS, Y_MIN_POS + Y_PROBE_OFFSET_FROM_EXTRUDER))
-  #define MAX_PROBE_Y (min(Y_MAX_POS, Y_MAX_POS + Y_PROBE_OFFSET_FROM_EXTRUDER))
-
-  #define HAS_Z_SERVO_ENDSTOP (defined(Z_ENDSTOP_SERVO_NR) && Z_ENDSTOP_SERVO_NR >= 0)
-
-  /**
-   * Z Sled Probe requires Z_SAFE_HOMING
-   */
-  #if ENABLED(Z_PROBE_SLED)
-    #define Z_SAFE_HOMING
-  #endif
-
-  /**
-   * Safe Homing Options
-   */
-  #if ENABLED(Z_SAFE_HOMING)
-    #ifndef Z_SAFE_HOMING_X_POINT
-      #define Z_SAFE_HOMING_X_POINT ((X_MIN_POS + X_MAX_POS) / 2)
-    #endif
-    #ifndef Z_SAFE_HOMING_Y_POINT
-      #define Z_SAFE_HOMING_Y_POINT ((Y_MIN_POS + Y_MAX_POS) / 2)
-    #endif
-  #endif
-
-  /**
+    /**
    * Host keep alive
    */
   #ifndef DEFAULT_KEEPALIVE_INTERVAL
     #define DEFAULT_KEEPALIVE_INTERVAL 2
   #endif
-
-  /**
-   * MAX_STEP_FREQUENCY differs for TOSHIBA
-   */
-  #if ENABLED(CONFIG_STEPPERS_TOSHIBA)
-    #define MAX_STEP_FREQUENCY 10000 // Max step frequency for Toshiba Stepper Controllers
-  #else
-    #define MAX_STEP_FREQUENCY 40000 // Max step frequency for Ultimaker (5000 pps / half step)
-  #endif
-
-  // MS1 MS2 Stepper Driver Microstepping mode table
-  #define MICROSTEP1 LOW,LOW
-  #define MICROSTEP2 HIGH,LOW
-  #define MICROSTEP4 LOW,HIGH
-  #define MICROSTEP8 HIGH,HIGH
-  #define MICROSTEP16 HIGH,HIGH
-  #if ENABLED(ULTIPANEL)
-    #undef SD_DETECT_INVERTED
-  #endif
-
-  /**
-   * Set defaults for missing (newer) options
-   */
-  #ifndef DISABLE_INACTIVE_X
-    #define DISABLE_INACTIVE_X DISABLE_X
-  #endif
-  #ifndef DISABLE_INACTIVE_Y
-    #define DISABLE_INACTIVE_Y DISABLE_Y
-  #endif
-  #ifndef DISABLE_INACTIVE_Z
-    #define DISABLE_INACTIVE_Z DISABLE_Z
-  #endif
-  #ifndef DISABLE_INACTIVE_E
-    #define DISABLE_INACTIVE_E DISABLE_E
-  #endif
-
+  
+  
   // Power Signal Control Definitions
   // By default use ATX definition
   #ifndef POWER_SUPPLY
@@ -288,79 +141,9 @@
   #define HAS_HEATER_2 (PIN_EXISTS(HEATER_2))
   #define HAS_HEATER_3 (PIN_EXISTS(HEATER_3))
   #define HAS_HEATER_BED (PIN_EXISTS(HEATER_BED))
-  #define HAS_AUTO_FAN_0 (PIN_EXISTS(EXTRUDER_0_AUTO_FAN))
-  #define HAS_AUTO_FAN_1 (PIN_EXISTS(EXTRUDER_1_AUTO_FAN))
-  #define HAS_AUTO_FAN_2 (PIN_EXISTS(EXTRUDER_2_AUTO_FAN))
-  #define HAS_AUTO_FAN_3 (PIN_EXISTS(EXTRUDER_3_AUTO_FAN))
-  #define HAS_AUTO_FAN (HAS_AUTO_FAN_0 || HAS_AUTO_FAN_1 || HAS_AUTO_FAN_2 || HAS_AUTO_FAN_3)
-  #define HAS_FAN0 (PIN_EXISTS(FAN))
-  #define HAS_FAN1 (PIN_EXISTS(FAN1) && CONTROLLERFAN_PIN != FAN1_PIN && EXTRUDER_0_AUTO_FAN_PIN != FAN1_PIN && EXTRUDER_1_AUTO_FAN_PIN != FAN1_PIN && EXTRUDER_2_AUTO_FAN_PIN != FAN1_PIN)
-  #define HAS_FAN2 (PIN_EXISTS(FAN2) && CONTROLLERFAN_PIN != FAN2_PIN && EXTRUDER_0_AUTO_FAN_PIN != FAN2_PIN && EXTRUDER_1_AUTO_FAN_PIN != FAN2_PIN && EXTRUDER_2_AUTO_FAN_PIN != FAN2_PIN)
-  #define HAS_CONTROLLERFAN (PIN_EXISTS(CONTROLLERFAN))
-  #define HAS_SERVO_0 (PIN_EXISTS(SERVO0))
-  #define HAS_SERVO_1 (PIN_EXISTS(SERVO1))
-  #define HAS_SERVO_2 (PIN_EXISTS(SERVO2))
-  #define HAS_SERVO_3 (PIN_EXISTS(SERVO3))
-  #define HAS_FIL_RUNOUT (PIN_EXISTS(FIL_RUNOUT))
-  #define HAS_HOME (PIN_EXISTS(HOME))
-  #define HAS_KILL (PIN_EXISTS(KILL))
   #define HAS_SUICIDE (PIN_EXISTS(SUICIDE))
-  #define HAS_PHOTOGRAPH (PIN_EXISTS(PHOTOGRAPH))
-  #define HAS_X_MIN (PIN_EXISTS(X_MIN))
-  #define HAS_X_MAX (PIN_EXISTS(X_MAX))
-  #define HAS_Y_MIN (PIN_EXISTS(Y_MIN))
-  #define HAS_Y_MAX (PIN_EXISTS(Y_MAX))
-  #define HAS_Z_MIN (PIN_EXISTS(Z_MIN))
-  #define HAS_Z_MAX (PIN_EXISTS(Z_MAX))
-  #define HAS_Z2_MIN (PIN_EXISTS(Z2_MIN))
-  #define HAS_Z2_MAX (PIN_EXISTS(Z2_MAX))
-  #define HAS_Z_MIN_PROBE_PIN (PIN_EXISTS(Z_MIN_PROBE))
-  #define HAS_SOLENOID_1 (PIN_EXISTS(SOL1))
-  #define HAS_SOLENOID_2 (PIN_EXISTS(SOL2))
-  #define HAS_SOLENOID_3 (PIN_EXISTS(SOL3))
-  #define HAS_MICROSTEPS (PIN_EXISTS(X_MS1))
-  #define HAS_MICROSTEPS_E0 (PIN_EXISTS(E0_MS1))
-  #define HAS_MICROSTEPS_E1 (PIN_EXISTS(E1_MS1))
-  #define HAS_MICROSTEPS_E2 (PIN_EXISTS(E2_MS1))
-  #define HAS_STEPPER_RESET (PIN_EXISTS(STEPPER_RESET))
-  #define HAS_X_ENABLE (PIN_EXISTS(X_ENABLE))
-  #define HAS_X2_ENABLE (PIN_EXISTS(X2_ENABLE))
-  #define HAS_Y_ENABLE (PIN_EXISTS(Y_ENABLE))
-  #define HAS_Y2_ENABLE (PIN_EXISTS(Y2_ENABLE))
-  #define HAS_Z_ENABLE (PIN_EXISTS(Z_ENABLE))
-  #define HAS_Z2_ENABLE (PIN_EXISTS(Z2_ENABLE))
-  #define HAS_E0_ENABLE (PIN_EXISTS(E0_ENABLE))
-  #define HAS_E1_ENABLE (PIN_EXISTS(E1_ENABLE))
-  #define HAS_E2_ENABLE (PIN_EXISTS(E2_ENABLE))
-  #define HAS_E3_ENABLE (PIN_EXISTS(E3_ENABLE))
-  #define HAS_E4_ENABLE (PIN_EXISTS(E4_ENABLE))
-  #define HAS_X_DIR (PIN_EXISTS(X_DIR))
-  #define HAS_X2_DIR (PIN_EXISTS(X2_DIR))
-  #define HAS_Y_DIR (PIN_EXISTS(Y_DIR))
-  #define HAS_Y2_DIR (PIN_EXISTS(Y2_DIR))
-  #define HAS_Z_DIR (PIN_EXISTS(Z_DIR))
-  #define HAS_Z2_DIR (PIN_EXISTS(Z2_DIR))
-  #define HAS_E0_DIR (PIN_EXISTS(E0_DIR))
-  #define HAS_E1_DIR (PIN_EXISTS(E1_DIR))
-  #define HAS_E2_DIR (PIN_EXISTS(E2_DIR))
-  #define HAS_E3_DIR (PIN_EXISTS(E3_DIR))
-  #define HAS_E4_DIR (PIN_EXISTS(E4_DIR))
-  #define HAS_X_STEP (PIN_EXISTS(X_STEP))
-  #define HAS_X2_STEP (PIN_EXISTS(X2_STEP))
-  #define HAS_Y_STEP (PIN_EXISTS(Y_STEP))
-  #define HAS_Y2_STEP (PIN_EXISTS(Y2_STEP))
-  #define HAS_Z_STEP (PIN_EXISTS(Z_STEP))
-  #define HAS_Z2_STEP (PIN_EXISTS(Z2_STEP))
-  #define HAS_E0_STEP (PIN_EXISTS(E0_STEP))
-  #define HAS_E1_STEP (PIN_EXISTS(E1_STEP))
-  #define HAS_E2_STEP (PIN_EXISTS(E2_STEP))
-  #define HAS_E3_STEP (PIN_EXISTS(E3_STEP))
-  #define HAS_E4_STEP (PIN_EXISTS(E4_STEP))
   #define HAS_DIGIPOTSS (PIN_EXISTS(DIGIPOTSS))
   #define HAS_BUZZER (PIN_EXISTS(BEEPER))
-
-  #define HAS_MOTOR_CURRENT_PWM (PIN_EXISTS(MOTOR_CURRENT_PWM_XY) || PIN_EXISTS(MOTOR_CURRENT_PWM_Z) || PIN_EXISTS(MOTOR_CURRENT_PWM_E))
-
   #define HAS_TEMP_HOTEND (HAS_TEMP_0 || ENABLED(HEATER_0_USES_MAX6675))
 
   /**
@@ -388,44 +171,7 @@
   #if HAS_HEATER_BED
     #define WRITE_HEATER_BED(v) WRITE(HEATER_BED_PIN, v)
   #endif
-
-  /**
-   * Up to 3 PWM fans
-   */
-  #if HAS_FAN2
-    #define FAN_COUNT 3
-  #elif HAS_FAN1
-    #define FAN_COUNT 2
-  #elif HAS_FAN0
-    #define FAN_COUNT 1
-  #else
-    #define FAN_COUNT 0
-  #endif
-
-  #if HAS_FAN0
-    #define WRITE_FAN(v) WRITE(FAN_PIN, v)
-    #define WRITE_FAN0(v) WRITE_FAN(v)
-  #endif
-  #if HAS_FAN1
-    #define WRITE_FAN1(v) WRITE(FAN1_PIN, v)
-  #endif
-  #if HAS_FAN2
-    #define WRITE_FAN2(v) WRITE(FAN2_PIN, v)
-  #endif
-  #define WRITE_FAN_N(n, v) WRITE_FAN##n(v)
-  #define PROBE_SELECTED (ENABLED(FIX_MOUNTED_PROBE) || ENABLED(Z_PROBE_ALLEN_KEY) || HAS_Z_SERVO_ENDSTOP || ENABLED(Z_PROBE_SLED))
-
-  #define PROBE_PIN_CONFIGURED (HAS_Z_MIN_PROBE_PIN || (HAS_Z_MIN && ENABLED(Z_MIN_PROBE_USES_Z_MIN_ENDSTOP_PIN)))
-  #if ENABLED(Z_PROBE_ALLEN_KEY)
-    #define PROBE_IS_TRIGGERED_WHEN_STOWED_TEST
-  #endif
-  #undef X_PROBE_OFFSET_FROM_EXTRUDER
-  #undef Y_PROBE_OFFSET_FROM_EXTRUDER
-  #undef Z_PROBE_OFFSET_FROM_EXTRUDER
-  #define X_PROBE_OFFSET_FROM_EXTRUDER 0
-  #define Y_PROBE_OFFSET_FROM_EXTRUDER 0
-  #define Z_PROBE_OFFSET_FROM_EXTRUDER 0
-
+  
   /**
    * Buzzer/Speaker
    */
@@ -441,19 +187,4 @@
       #define LCD_FEEDBACK_FREQUENCY_DURATION_MS 2
     #endif
   #endif
-
-  /**
-   * Z_HOMING_HEIGHT / Z_PROBE_TRAVEL_HEIGHT
-   */
-  #ifndef Z_HOMING_HEIGHT
-    #ifndef Z_PROBE_TRAVEL_HEIGHT
-      #define Z_HOMING_HEIGHT 0
-    #else
-      #define Z_HOMING_HEIGHT Z_PROBE_TRAVEL_HEIGHT
-    #endif
-  #endif
-  #ifndef Z_PROBE_TRAVEL_HEIGHT
-    #define Z_PROBE_TRAVEL_HEIGHT Z_HOMING_HEIGHT
-  #endif
-
 #endif // CONDITIONALS_POST_H

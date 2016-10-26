@@ -99,10 +99,6 @@
   #if EXTRUDERS > 4
     #error "The maximum number of EXTRUDERS in Marlin is 4."
   #endif
-
-  #if ENABLED(TEMP_SENSOR_1_AS_REDUNDANT)
-    #error "EXTRUDERS must be 1 with TEMP_SENSOR_1_AS_REDUNDANT."
-  #endif
 #endif
 
 /**
@@ -304,18 +300,6 @@
   #error "You cannot set CONTROLLERFAN_PIN equal to FAN_PIN."
 #endif
 
-#if HAS_CONTROLLERFAN
-  #if EXTRUDER_0_AUTO_FAN_PIN == CONTROLLERFAN_PIN
-    #error "You cannot set EXTRUDER_0_AUTO_FAN_PIN equal to CONTROLLERFAN_PIN."
-  #elif EXTRUDER_1_AUTO_FAN_PIN == CONTROLLERFAN_PIN
-    #error "You cannot set EXTRUDER_1_AUTO_FAN_PIN equal to CONTROLLERFAN_PIN."
-  #elif EXTRUDER_2_AUTO_FAN_PIN == CONTROLLERFAN_PIN
-    #error "You cannot set EXTRUDER_2_AUTO_FAN_PIN equal to CONTROLLERFAN_PIN."
-  #elif EXTRUDER_3_AUTO_FAN_PIN == CONTROLLERFAN_PIN
-    #error "You cannot set EXTRUDER_3_AUTO_FAN_PIN equal to CONTROLLERFAN_PIN."
-  #endif
-#endif
-
 /**
  * Test Heater, Temp Sensor, and Extruder Pins; Sensor Type must also be set.
  */
@@ -365,16 +349,12 @@
   #elif TEMP_SENSOR_3 != 0
     #error "TEMP_SENSOR_3 shouldn't be set with only 2 extruders."
   #endif
-#elif TEMP_SENSOR_1 != 0 && DISABLED(TEMP_SENSOR_1_AS_REDUNDANT)
+#elif TEMP_SENSOR_1 != 0
   #error "TEMP_SENSOR_1 shouldn't be set with only 1 extruder."
 #elif TEMP_SENSOR_2 != 0
   #error "TEMP_SENSOR_2 shouldn't be set with only 1 extruder."
 #elif TEMP_SENSOR_3 != 0
   #error "TEMP_SENSOR_3 shouldn't be set with only 1 extruder."
-#endif
-
-#if ENABLED(TEMP_SENSOR_1_AS_REDUNDANT) && TEMP_SENSOR_1 == 0
-  #error "TEMP_SENSOR_1 is required with TEMP_SENSOR_1_AS_REDUNDANT."
 #endif
 
 /**
@@ -464,8 +444,6 @@
   #error "HOMING_FEEDRATE is deprecated. Set individual rates with HOMING_FEEDRATE_(XY|Z|E) instead."
 #elif defined(MANUAL_HOME_POSITIONS)
   #error "MANUAL_HOME_POSITIONS is deprecated. Set MANUAL_[XYZ]_HOME_POS as-needed instead."
-#elif defined(PID_ADD_EXTRUSION_RATE)
-  #error "PID_ADD_EXTRUSION_RATE is now PID_EXTRUSION_SCALING and is DISABLED by default. Are you sure you want to use this option? Please update your configuration."
 #elif defined(Z_RAISE_BEFORE_HOMING)
   #error "Z_RAISE_BEFORE_HOMING is now Z_HOMING_HEIGHT. Please update your configuration."
 #elif defined(MIN_Z_HEIGHT_FOR_HOMING)

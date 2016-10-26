@@ -3,13 +3,6 @@
   #define CONFIGURATION_ADV_H_VERSION 010100
 
   #if ENABLED(PIDTEMP)
-    // this adds an experimental additional term to the heating power, proportional to the extrusion speed.
-    // if Kc is chosen well, the additional required power due to increased melting should be compensated.
-    //#define PID_EXTRUSION_SCALING
-    #if ENABLED(PID_EXTRUSION_SCALING)
-      #define DEFAULT_Kc (100) //heating power=Kc*(e_speed)
-      #define LPQ_MAX_LEN 50
-    #endif
   #endif
 
   /**
@@ -110,13 +103,6 @@
   //===========================================================================
   //============================ Mechanical Settings ==========================
   //===========================================================================
-
-  // @section homing
-
-  // If you want endstops to stay on (by default) even when not homing
-  // enable this option. Override at any time with M120, M121.
-  //#define ENDSTOPS_ALWAYS_ON_DEFAULT
-
   // @section extras
 
   //#define Z_LATE_ENABLE // Enable Z the last moment. Needed if your Z driver overheats.
@@ -177,34 +163,13 @@
   #define DEFAULT_MINIMUMFEEDRATE       0.0     // minimum feedrate
   #define DEFAULT_MINTRAVELFEEDRATE     0.0
 
-  // @section lcd
-
-  #if ENABLED(ULTIPANEL)
-    #define MANUAL_FEEDRATE {50*60, 50*60, 4*60, 60} // Feedrates for manual moves along X, Y, Z, E from panel
-    #define ULTIPANEL_FEEDMULTIPLY  // Comment to disable setting feedrate multiplier via encoder
-  #endif
-
-  // @section extras
+   // @section extras
 
   // minimum time in microseconds that a movement needs to take if the buffer is emptied.
   #define DEFAULT_MINSEGMENTTIME        20000
 
   // If defined the movements slow down when the look ahead buffer is only half full
   #define SLOWDOWN
-
-  // Frequency limit
-  // See nophead's blog for more info
-  // Not working O
-  //#define XY_FREQUENCY_LIMIT  15
-
-  // Minimum planner junction speed. Sets the default minimum speed the planner plans for at the end
-  // of the buffer and all stops. This should not be much greater than zero and should only be changed
-  // if unwanted behavior is observed on a user's machine when running at very slow speeds.
-  #define MINIMUM_PLANNER_SPEED 0.05// (mm/sec)
-  // Microstep setting (Only functional when stepper driver microstep pins are connected to MCU.
-  #define MICROSTEP_MODES {16,16,16,16,16} // [1,2,4,8,16]
-  // Motor Current setting (Only functional when motor driver current ref pins are connected to a digital trimpot on supported boards)
-  #define DIGIPOT_MOTOR_CURRENT {135,135,135,135,135} // Values 0-255 (RAMBO 135 = ~0.75A, 185 = ~1A)
   //===========================================================================
   //=============================Additional Features===========================
   //===========================================================================
