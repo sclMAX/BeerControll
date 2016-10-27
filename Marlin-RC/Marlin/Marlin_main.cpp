@@ -185,10 +185,8 @@ bool enqueue_and_echo_command(const char* cmd, bool say_ok/*=false*/) {
 }
 
 void setup_killpin() {
-  #if HAS_KILL
     SET_INPUT(KILL_PIN);
     WRITE(KILL_PIN, HIGH);
-  #endif
 }
 void setup_powerhold() {
   #if HAS_SUICIDE
