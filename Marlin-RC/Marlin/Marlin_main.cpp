@@ -22,10 +22,6 @@ static char* current_command, *current_command_args;
 static uint8_t cmd_queue_index_r = 0,
                cmd_queue_index_w = 0,
                commands_in_queue = 0;
-#if FAN_COUNT > 0
-  int fanSpeeds[FAN_COUNT] = { 0 };
-#endif
-
 // The active extruder (tool). Set with T<extruder> command.
 uint8_t active_extruder = 0;
 volatile bool wait_for_heatup = true;
@@ -86,8 +82,6 @@ static bool send_ok[BUFSIZE];
 void stop();
 void get_available_commands();
 void process_next_command();
-void prepare_move_to_destination();
-void set_current_from_steppers_for_axis(AxisEnum axis);
 void serial_echopair_P(const char* s_P, char v)          { serialprintPGM(s_P); SERIAL_CHAR(v); }
 void serial_echopair_P(const char* s_P, int v)           { serialprintPGM(s_P); SERIAL_ECHO(v); }
 void serial_echopair_P(const char* s_P, long v)          { serialprintPGM(s_P); SERIAL_ECHO(v); }
@@ -406,7 +400,6 @@ void unknown_command_error() {
     }
     next_busy_signal_ms = ms + host_keepalive_interval * 1000UL;
   }
-
 #endif //HOST_KEEPALIVE_FEATURE
 #if ENABLED(ULTIPANEL)
 
@@ -432,9 +425,6 @@ void unknown_command_error() {
       lcd_setstatus(args, true);
     else {
       LCD_MESSAGEPGM(MSG_USERWAIT);
-      #if ENABLED(LCD_PROGRESS_BAR) && PROGRESS_MSG_EXPIRE > 0
-        dontExpireStatus();
-      #endif
     }
 
     lcd_ignore_click();

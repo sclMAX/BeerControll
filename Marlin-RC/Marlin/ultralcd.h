@@ -25,94 +25,50 @@
 
 #include "Marlin.h"
 
-#if ENABLED(ULTRA_LCD)
-
-  #define BUTTON_EXISTS(BN) (defined(BTN_## BN) && BTN_## BN >= 0)
-  #define BUTTON_PRESSED(BN) !READ(BTN_## BN)
-
-  int lcd_strlen(const char* s);
-  int lcd_strlen_P(const char* s);
-  void lcd_update();
-  void lcd_init();
-  bool lcd_hasstatus();
-  void lcd_setstatus(const char* message, const bool persist=false);
-  void lcd_setstatuspgm(const char* message, const uint8_t level=0);
-  void lcd_setalertstatuspgm(const char* message);
-  void lcd_reset_alert_level();
-  bool lcd_detected(void);
-  void lcd_kill_screen();
-  void kill_screen(const char* lcd_msg);
-
-  #if HAS_BUZZER
-    void lcd_buzz(long duration, uint16_t freq);
-  #endif
-
-  #if ENABLED(LCD_PROGRESS_BAR) && PROGRESS_MSG_EXPIRE > 0
-    void dontExpireStatus();
-  #endif
-
-  #if ENABLED(DOGLCD)
-    extern int lcd_contrast;
-    void set_lcd_contrast(int value);
-  #elif ENABLED(SHOW_BOOTSCREEN)
-    void bootscreen();
-  #endif
-
-  #define LCD_MESSAGEPGM(x) lcd_setstatuspgm(PSTR(x))
-  #define LCD_ALERTMESSAGEPGM(x) lcd_setalertstatuspgm(PSTR(x))
-
-  #define LCD_UPDATE_INTERVAL 100
-  #define LCD_TIMEOUT_TO_STATUS 15000
-
-  #if ENABLED(ULTIPANEL)
-    extern volatile uint8_t buttons;  //the last checked buttons in a bit array.
-    void lcd_buttons_update();
-    void lcd_quick_feedback(); // Audible feedback for a button click - could also be visual
-    bool lcd_clicked();
-    void lcd_ignore_click(bool b=true);
-  #else
-    FORCE_INLINE void lcd_buttons_update() {}
-  #endif
-
-  extern int preheatHotendTemp1;
-  extern int preheatBedTemp1;
-  extern int preheatFanSpeed1;
-  extern int preheatHotendTemp2;
-  extern int preheatBedTemp2;
-  extern int preheatFanSpeed2;
-  bool lcd_blink();
-
-  #if ENABLED(ULTIPANEL)
-    #define BLEN_A 0
-    #define BLEN_B 1
-    // Encoder click is directly connected
-    #if BUTTON_EXISTS(ENC)
-      #define BLEN_C 2
-      #define EN_C (_BV(BLEN_C))
-    #endif
-    #define EN_A (_BV(BLEN_A))
-    #define EN_B (_BV(BLEN_B))
-    #define EN_C (_BV(BLEN_C))
-  #endif
-
-  #if ENABLED(NEWPANEL)
-    #define LCD_CLICKED (buttons & EN_C)
-  #endif
-
-#else //no LCD
-  FORCE_INLINE void lcd_update() {}
-  FORCE_INLINE void lcd_init() {}
-  FORCE_INLINE bool lcd_hasstatus() { return false; }
-  FORCE_INLINE void lcd_setstatus(const char* message, const bool persist=false) {UNUSED(message); UNUSED(persist);}
-  FORCE_INLINE void lcd_setstatuspgm(const char* message, const uint8_t level=0) {UNUSED(message); UNUSED(level);}
-  FORCE_INLINE void lcd_buttons_update() {}
-  FORCE_INLINE void lcd_reset_alert_level() {}
-  FORCE_INLINE bool lcd_detected(void) { return true; }
-
-  #define LCD_MESSAGEPGM(x) NOOP
-  #define LCD_ALERTMESSAGEPGM(x) NOOP
-
-#endif //ULTRA_LCD
+#define BUTTON_EXISTS(BN) (defined(BTN_## BN) && BTN_## BN >= 0)
+#define BUTTON_PRESSED(BN) !READ(BTN_## BN)
+int lcd_strlen(const char* s);
+int lcd_strlen_P(const char* s);
+void lcd_update();
+void lcd_init();
+bool lcd_hasstatus();
+void lcd_setstatus(const char* message, const bool persist=false);
+void lcd_setstatuspgm(const char* message, const uint8_t level=0);
+void lcd_setalertstatuspgm(const char* message);
+void lcd_reset_alert_level();
+bool lcd_detected(void);
+void lcd_kill_screen();
+void kill_screen(const char* lcd_msg);
+void lcd_buzz(long duration, uint16_t freq);
+extern int lcd_contrast;
+void set_lcd_contrast(int value);
+#define LCD_MESSAGEPGM(x) lcd_setstatuspgm(PSTR(x))
+#define LCD_ALERTMESSAGEPGM(x) lcd_setalertstatuspgm(PSTR(x))
+#define LCD_UPDATE_INTERVAL 100
+#define LCD_TIMEOUT_TO_STATUS 15000
+extern volatile uint8_t buttons;  //the last checked buttons in a bit array.
+void lcd_buttons_update();
+void lcd_quick_feedback(); // Audible feedback for a button click - could also be visual
+bool lcd_clicked();
+void lcd_ignore_click(bool b=true);
+extern int preheatHotendTemp1;
+extern int preheatBedTemp1;
+extern int preheatFanSpeed1;
+extern int preheatHotendTemp2;
+extern int preheatBedTemp2;
+extern int preheatFanSpeed2;
+bool lcd_blink();
+#define BLEN_A 0
+#define BLEN_B 1
+// Encoder click is directly connected
+#if BUTTON_EXISTS(ENC)
+  #define BLEN_C 2
+  #define EN_C (_BV(BLEN_C))
+#endif
+#define EN_A (_BV(BLEN_A))
+#define EN_B (_BV(BLEN_B))
+#define EN_C (_BV(BLEN_C))
+#define LCD_CLICKED (buttons & EN_C)
 
 char* itostr2(const uint8_t& x);
 char* itostr3sign(const int& x);
