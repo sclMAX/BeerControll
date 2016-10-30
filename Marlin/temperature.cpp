@@ -801,7 +801,7 @@ void Temperature::manage_heater() {
       }
     #endif
   #endif //TEMP_SENSOR_BED != 0
-}
+} //manage_heateu
 
 #define PGM_RD_W(x)   (short)pgm_read_word(&x)
 

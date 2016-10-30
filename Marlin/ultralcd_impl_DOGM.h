@@ -318,17 +318,17 @@ FORCE_INLINE void _draw_heater_status(int x, int heater) {
 
   _draw_centered_temp((isBed ? thermalManager.degTargetBed() : thermalManager.degTargetHotend(heater)) + 0.5, x, 7);
 
-  _draw_centered_temp((isBed ? thermalManager.degBed() : thermalManager.degHotend(heater)) + 0.5, x, 28);
+  _draw_centered_temp((isBed ? thermalManager.degBed() : thermalManager.degHotend(heater)) + 0.5, x, 40);// MODIFICADO 28 -> 50
 
-  int h = isBed ? 7 : 8,
-      y = isBed ? 18 : 17;
+  int h = 0,
+      y =29;
   if (isBed ? thermalManager.isHeatingBed() : thermalManager.isHeatingHotend(heater)) {
-    u8g.setColorIndex(0); // white on black
-    u8g.drawBox(x + h, y, 2, 2);
-    u8g.setColorIndex(1); // black on white
+    u8g.drawBox(x + h, y, 18, 2);
   }
   else {
-    u8g.drawBox(x + h, y, 2, 2);
+    u8g.setColorIndex(0); // white on black
+    u8g.drawBox(x + h, y, 18, 2);
+    u8g.setColorIndex(1); // black on white
   }
 }
 
@@ -349,49 +349,36 @@ FORCE_INLINE void _draw_axis_label(AxisEnum axis, const char *pstr, bool blink) 
   }
 }
 
+static void drawOlla(u8g_uint_t x, u8g_uint_t y, char etiqueta){
+  u8g_uint_t ollaAlto = 20;
+  u8g_uint_t ollaAncho = 20;
+  u8g_uint_t ollaIntAncho = ollaAncho - 2;
+  u8g_uint_t ollaIntAlto = ollaAlto - 1;
+  u8g.drawBox(x,y,ollaAncho,ollaAlto);
+  u8g.setColorIndex(0); //  white on black
+  u8g.drawBox(x + 1,y,ollaIntAncho,ollaIntAlto);
+  u8g.setColorIndex(1); // black on white 
+  bool updown = false;
+  for(int i = x; i< (ollaAncho + x); i++){
+    int y1 = (updown)? (y + 3): (y + 4);
+    updown = !updown;
+    u8g.drawBox(i,y1,1,1);
+  }
+  u8g.setPrintPos(x + 8, y + 14);
+  lcd_print(etiqueta);
+
+}
+
 static void lcd_implementation_status_screen() {
-  u8g.setColorIndex(1); // black on white
-
+  u8g.setColorIndex(1); // black on white 
   bool blink = lcd_blink();
-
-  // Symbols menu graphics, animated fan
-  u8g.drawBitmapP(9, 1, STATUS_SCREENBYTEWIDTH, STATUS_SCREENHEIGHT,
-    #if HAS_FAN0
-      blink && fanSpeeds[0] ? status_screen0_bmp : status_screen1_bmp
-    #else
-      status_screen0_bmp
-    #endif
-  );
-
+  //MACERADOR
+  drawOlla(4, 8, 'M');
+  //LICOR
+  drawOlla(80, 8, 'L');
   // Status Menu Font for SD info, Heater status, Fan, XYZ
   lcd_setFont(FONT_STATUSMENU);
-
-  #if ENABLED(SDSUPPORT)
-    // SD Card Symbol
-    u8g.drawBox(42, 42 - (TALL_FONT_CORRECTION), 8, 7);
-    u8g.drawBox(50, 44 - (TALL_FONT_CORRECTION), 2, 5);
-    u8g.drawFrame(42, 49 - (TALL_FONT_CORRECTION), 10, 4);
-    u8g.drawPixel(50, 43 - (TALL_FONT_CORRECTION));
-
-    // Progress bar frame
-    u8g.drawFrame(54, 49, 73, 4 - (TALL_FONT_CORRECTION));
-
-    // SD Card Progress bar and clock
-    if (IS_SD_PRINTING) {
-      // Progress bar solid part
-      u8g.drawBox(55, 50, (unsigned int)(71 * card.percentDone() * 0.01), 2 - (TALL_FONT_CORRECTION));
-    }
-
-    u8g.setPrintPos(80,48);
-
-    char buffer[10];
-    duration_t elapsed = print_job_timer.duration();
-    elapsed.toDigital(buffer);
-    lcd_print(buffer);
-
-  #endif
-
-  // Extruders
+   // Extruders
   HOTEND_LOOP() _draw_heater_status(5 + e * 25, e);
 
   // Heated bed
@@ -409,45 +396,8 @@ static void lcd_implementation_status_screen() {
     }
   #endif
 
-  // X, Y, Z-Coordinates
-  // Before homing the axis letters are blinking 'X' <-> '?'.
-  // When axis is homed but axis_known_position is false the axis letters are blinking 'X' <-> ' '.
-  // When everything is ok you see a constant 'X'.
-  #define XYZ_BASELINE 38
-
-  #if ENABLED(USE_SMALL_INFOFONT)
-    u8g.drawBox(0, 30, LCD_PIXEL_WIDTH, 10);
-  #else
-    u8g.drawBox(0, 30, LCD_PIXEL_WIDTH, 9);
-  #endif
-  u8g.setColorIndex(0); // white on black
-
-  u8g.setPrintPos(2, XYZ_BASELINE);
-  _draw_axis_label(X_AXIS, PSTR(MSG_X), blink);
-  u8g.setPrintPos(10, XYZ_BASELINE);
-  lcd_print(ftostr4sign(current_position[X_AXIS]));
-
-  u8g.setPrintPos(43, XYZ_BASELINE);
-  _draw_axis_label(Y_AXIS, PSTR(MSG_Y), blink);
-  u8g.setPrintPos(51, XYZ_BASELINE);
-  lcd_print(ftostr4sign(current_position[Y_AXIS]));
-
-  u8g.setPrintPos(83, XYZ_BASELINE);
-  _draw_axis_label(Z_AXIS, PSTR(MSG_Z), blink);
-  u8g.setPrintPos(91, XYZ_BASELINE);
-  lcd_print(ftostr52sp(current_position[Z_AXIS] + 0.00001));
 
   u8g.setColorIndex(1); // black on white
-
-  // Feedrate
-  lcd_setFont(FONT_MENU);
-  u8g.setPrintPos(3, 49);
-  lcd_print(LCD_STR_FEEDRATE[0]);
-
-  lcd_setFont(FONT_STATUSMENU);
-  u8g.setPrintPos(12, 49);
-  lcd_print(itostr3(feedrate_percentage));
-  lcd_print('%');
 
   // Status line
   #if ENABLED(USE_SMALL_INFOFONT)
