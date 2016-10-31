@@ -107,10 +107,6 @@ class Temperature {
       static float bedKp, bedKi, bedKd;
     #endif
 
-    #if ENABLED(BABYSTEPPING)
-      static volatile int babystepsTodo[3];
-    #endif
-
     #if ENABLED(THERMAL_PROTECTION_HOTENDS) && WATCH_TEMP_PERIOD > 0
       static int watch_target_temp[HOTENDS];
       static millis_t watch_heater_next_ms[HOTENDS];
@@ -385,38 +381,6 @@ class Temperature {
         }
       #endif
     }
-
-    #if ENABLED(BABYSTEPPING)
-
-      static void babystep_axis(AxisEnum axis, int distance) {
-        #if ENABLED(COREXY) || ENABLED(COREXZ) || ENABLED(COREYZ)
-          #if ENABLED(BABYSTEP_XY)
-            switch (axis) {
-              case CORE_AXIS_1: // X on CoreXY and CoreXZ, Y on CoreYZ
-                babystepsTodo[CORE_AXIS_1] += distance * 2;
-                babystepsTodo[CORE_AXIS_2] += distance * 2;
-                break;
-              case CORE_AXIS_2: // Y on CoreXY, Z on CoreXZ and CoreYZ
-                babystepsTodo[CORE_AXIS_1] += distance * 2;
-                babystepsTodo[CORE_AXIS_2] -= distance * 2;
-                break;
-              case NORMAL_AXIS: // Z on CoreXY, Y on CoreXZ, X on CoreYZ
-                babystepsTodo[NORMAL_AXIS] += distance;
-                break;
-            }
-          #elif ENABLED(COREXZ) || ENABLED(COREYZ)
-            // Only Z stepping needs to be handled here
-            babystepsTodo[CORE_AXIS_1] += distance * 2;
-            babystepsTodo[CORE_AXIS_2] -= distance * 2;
-          #else
-            babystepsTodo[Z_AXIS] += distance;
-          #endif
-        #else
-          babystepsTodo[axis] += distance;
-        #endif
-      }
-
-    #endif // BABYSTEPPING
 
   private:
 

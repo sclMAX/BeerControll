@@ -83,36 +83,6 @@
 #endif
 
 /**
- * Progress Bar
- */
-#if ENABLED(LCD_PROGRESS_BAR)
-  #if DISABLED(SDSUPPORT)
-    #error "LCD_PROGRESS_BAR requires SDSUPPORT."
-  #endif
-  #if ENABLED(DOGLCD)
-    #error "LCD_PROGRESS_BAR does not apply to graphical displays."
-  #endif
-  #if ENABLED(FILAMENT_LCD_DISPLAY)
-    #error "LCD_PROGRESS_BAR and FILAMENT_LCD_DISPLAY are not fully compatible. Comment out this line to use both."
-  #endif
-#endif
-
-/**
- * Babystepping
- */
-#if ENABLED(BABYSTEPPING)
-  #if DISABLED(ULTRA_LCD)
-    #error "BABYSTEPPING requires an LCD controller."
-  #endif
-  #if ENABLED(SCARA)
-    #error "BABYSTEPPING is not implemented for SCARA yet."
-  #endif
-  #if ENABLED(DELTA) && ENABLED(BABYSTEP_XY)
-    #error "BABYSTEPPING only implemented for Z axis on deltabots."
-  #endif
-#endif
-
-/**
  * Filament Runout needs a pin and either SD Support or Auto print start detection
  */
 #if ENABLED(FILAMENT_RUNOUT_SENSOR)
@@ -121,13 +91,6 @@
   #elif DISABLED(SDSUPPORT) && DISABLED(PRINTJOB_TIMER_AUTOSTART)
     #error "FILAMENT_RUNOUT_SENSOR requires SDSUPPORT or PRINTJOB_TIMER_AUTOSTART."
   #endif
-#endif
-
-/**
- * Filament Change with Extruder Runout Prevention
- */
-#if ENABLED(FILAMENT_CHANGE_FEATURE) && ENABLED(EXTRUDER_RUNOUT_PREVENT)
-  #error "EXTRUDER_RUNOUT_PREVENT is incompatible with FILAMENT_CHANGE_FEATURE."
 #endif
 
 /**
@@ -237,8 +200,6 @@
   #elif MESH_NUM_X_POINTS > 9 || MESH_NUM_Y_POINTS > 9
     #error "MESH_NUM_X_POINTS and MESH_NUM_Y_POINTS must be less than 10."
   #endif
-#elif ENABLED(MANUAL_BED_LEVELING)
-  #error "MESH_BED_LEVELING is required for MANUAL_BED_LEVELING."
 #endif
 
 /**
@@ -703,8 +664,6 @@
   #error "PROBE_SERVO_DEACTIVATION_DELAY is deprecated. Use DEACTIVATE_SERVOS_AFTER_MOVE instead."
 #elif defined(SERVO_DEACTIVATION_DELAY)
   #error "SERVO_DEACTIVATION_DELAY is deprecated. Use SERVO_DELAY instead."
-#elif ENABLED(FILAMENTCHANGEENABLE)
-  #error "FILAMENTCHANGEENABLE is now FILAMENT_CHANGE_FEATURE. Please update your configuration."
 #elif defined(PLA_PREHEAT_HOTEND_TEMP)
   #error "PLA_PREHEAT_HOTEND_TEMP is now PREHEAT_1_TEMP_HOTEND. Please update your configuration."
 #elif defined(PLA_PREHEAT_HPB_TEMP)

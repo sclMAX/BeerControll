@@ -1,26 +1,4 @@
 /**
- * Marlin 3D Printer Firmware
- * Copyright (C) 2016 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
- *
- * Based on Sprinter and grbl.
- * Copyright (C) 2011 Camiel Gubbels / Erik van der Zalm
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- */
-
-/**
  * ultralcd_impl_DOGM.h
  *
  * Graphics LCD implementation for 128x64 pixel LCDs by STB for ErikZalm/Marlin
@@ -56,53 +34,22 @@
 #if DISABLED(MAPPER_C2C3) && DISABLED(MAPPER_NON) && ENABLED(USE_BIG_EDIT_FONT)
   #undef USE_BIG_EDIT_FONT
 #endif
-
-#if ENABLED(USE_SMALL_INFOFONT)
-  #include "dogm_font_data_6x9_marlin.h"
-  #define FONT_STATUSMENU_NAME u8g_font_6x9
-#else
-  #define FONT_STATUSMENU_NAME FONT_MENU_NAME
-#endif
-
+#define FONT_STATUSMENU_NAME FONT_MENU_NAME
 #include "dogm_font_data_Marlin_symbols.h"   // The Marlin special symbols
 #define FONT_SPECIAL_NAME Marlin_symbols
-
-#if DISABLED(SIMULATE_ROMFONT)
-  #if ENABLED(DISPLAY_CHARSET_ISO10646_1)
-    #include "dogm_font_data_ISO10646_1.h"
-    #define FONT_MENU_NAME ISO10646_1_5x7
-  #elif ENABLED(DISPLAY_CHARSET_ISO10646_5)
-    #include "dogm_font_data_ISO10646_5_Cyrillic.h"
-    #define FONT_MENU_NAME ISO10646_5_Cyrillic_5x7
-  #elif ENABLED(DISPLAY_CHARSET_ISO10646_KANA)
-    #include "dogm_font_data_ISO10646_Kana.h"
-    #define FONT_MENU_NAME ISO10646_Kana_5x7
-  #elif ENABLED(DISPLAY_CHARSET_ISO10646_GREEK)
-    #include "dogm_font_data_ISO10646_Greek.h"
-    #define FONT_MENU_NAME ISO10646_Greek_5x7
-  #elif ENABLED(DISPLAY_CHARSET_ISO10646_CN)
-    #include "dogm_font_data_ISO10646_CN.h"
-    #define FONT_MENU_NAME ISO10646_CN
-    #define TALL_FONT_CORRECTION 1
-  #else // fall-back
-    #include "dogm_font_data_ISO10646_1.h"
-    #define FONT_MENU_NAME ISO10646_1_5x7
-  #endif
-#else // SIMULATE_ROMFONT
-  #if DISPLAY_CHARSET_HD44780 == JAPANESE
-    #include "dogm_font_data_HD44780_J.h"
-    #define FONT_MENU_NAME HD44780_J_5x7
-  #elif DISPLAY_CHARSET_HD44780 == WESTERN
-    #include "dogm_font_data_HD44780_W.h"
-    #define FONT_MENU_NAME HD44780_W_5x7
-  #elif DISPLAY_CHARSET_HD44780 == CYRILLIC
-    #include "dogm_font_data_HD44780_C.h"
-    #define FONT_MENU_NAME HD44780_C_5x7
-  #else // fall-back
-    #include "dogm_font_data_ISO10646_1.h"
-    #define FONT_MENU_NAME ISO10646_1_5x7
-  #endif
-#endif // SIMULATE_ROMFONT
+#if DISPLAY_CHARSET_HD44780 == JAPANESE
+  #include "dogm_font_data_HD44780_J.h"
+  #define FONT_MENU_NAME HD44780_J_5x7
+#elif DISPLAY_CHARSET_HD44780 == WESTERN
+  #include "dogm_font_data_HD44780_W.h"
+  #define FONT_MENU_NAME HD44780_W_5x7
+#elif DISPLAY_CHARSET_HD44780 == CYRILLIC
+  #include "dogm_font_data_HD44780_C.h"
+  #define FONT_MENU_NAME HD44780_C_5x7
+#else // fall-back
+  #include "dogm_font_data_ISO10646_1.h"
+  #define FONT_MENU_NAME ISO10646_1_5x7
+#endif
 
 //#define FONT_STATUSMENU_NAME FONT_MENU_NAME
 
@@ -308,6 +255,17 @@ FORCE_INLINE void _draw_centered_temp(int temp, int x, int y) {
   lcd_print(itostr3(temp));
   lcd_printPGM(PSTR(LCD_STR_DEGREE " "));
 }
+FORCE_INLINE void _draw_quemador(int x, int y){  
+  u8g.drawBox(x + 2, y, 1, 1);
+  u8g.drawBox(x + 6, y, 1, 1);
+  u8g.drawBox(x + 11, y, 1, 1);
+  u8g.drawBox(x + 15, y, 1, 1);
+  u8g.drawBox(x + 1, y + 1, 3, 1);
+  u8g.drawBox(x + 5, y + 1, 3, 1);
+  u8g.drawBox(x + 10, y + 1, 3, 1);
+  u8g.drawBox(x + 14, y + 1, 3, 1);
+  u8g.drawBox(x, y + 2, 18,1);  
+}
 
 FORCE_INLINE void _draw_heater_status(int x, int heater) {
   #if HAS_TEMP_BED
@@ -315,20 +273,17 @@ FORCE_INLINE void _draw_heater_status(int x, int heater) {
   #else
     const bool isBed = false;
   #endif
-
   _draw_centered_temp((isBed ? thermalManager.degTargetBed() : thermalManager.degTargetHotend(heater)) + 0.5, x, 7);
-
   _draw_centered_temp((isBed ? thermalManager.degBed() : thermalManager.degHotend(heater)) + 0.5, x, 40);// MODIFICADO 28 -> 50
-
   int h = 0,
       y =29;
   if (isBed ? thermalManager.isHeatingBed() : thermalManager.isHeatingHotend(heater)) {
-    u8g.drawBox(x + h, y, 18, 2);
+    _draw_quemador(x + h, y);    
   }
-  else {
-    u8g.setColorIndex(0); // white on black
-    u8g.drawBox(x + h, y, 18, 2);
-    u8g.setColorIndex(1); // black on white
+  else {    
+    u8g.setColorIndex(0); // black on white
+    u8g.drawBox(x + h, y, 18, 3);
+    u8g.setColorIndex(1); // white on black
   }
 }
 
@@ -348,7 +303,7 @@ FORCE_INLINE void _draw_axis_label(AxisEnum axis, const char *pstr, bool blink) 
     }
   }
 }
-
+//  DRAW OLLA 
 static void drawOlla(u8g_uint_t x, u8g_uint_t y, char etiqueta){
   u8g_uint_t ollaAlto = 20;
   u8g_uint_t ollaAncho = 20;
@@ -366,8 +321,7 @@ static void drawOlla(u8g_uint_t x, u8g_uint_t y, char etiqueta){
   }
   u8g.setPrintPos(x + 8, y + 14);
   lcd_print(etiqueta);
-
-}
+}// DRAW OLLA
 
 static void lcd_implementation_status_screen() {
   u8g.setColorIndex(1); // black on white 
@@ -380,45 +334,15 @@ static void lcd_implementation_status_screen() {
   lcd_setFont(FONT_STATUSMENU);
    // Extruders
   HOTEND_LOOP() _draw_heater_status(5 + e * 25, e);
-
   // Heated bed
   #if HOTENDS < 4 && HAS_TEMP_BED
     _draw_heater_status(81, -1);
   #endif
-
-  // Fan
-  u8g.setPrintPos(104, 27);
-  #if HAS_FAN0
-    int per = ((fanSpeeds[0] + 1) * 100) / 256;
-    if (per) {
-      lcd_print(itostr3(per));
-      lcd_print('%');
-    }
-  #endif
-
-
   u8g.setColorIndex(1); // black on white
-
   // Status line
-  #if ENABLED(USE_SMALL_INFOFONT)
-    u8g.setPrintPos(0, 62);
-  #else
-    u8g.setPrintPos(0, 63);
-  #endif
-  #if DISABLED(FILAMENT_LCD_DISPLAY)
-    lcd_print(lcd_status_message);
-  #else
-    if (PENDING(millis(), previous_lcd_status_ms + 5000UL)) {  //Display both Status message line and Filament display on the last line
-      lcd_print(lcd_status_message);
-    }
-    else {
-      lcd_printPGM(PSTR("dia:"));
-      lcd_print(ftostr12ns(filament_width_meas));
-      lcd_printPGM(PSTR(" factor:"));
-      lcd_print(itostr3(100.0 * volumetric_multiplier[FILAMENT_SENSOR_EXTRUDER_NUM]));
-      lcd_print('%');
-    }
-  #endif
+  u8g.setPrintPos(0, 63);
+  lcd_print(lcd_status_message);
+ 
 }
 
 static void lcd_implementation_mark_as_selected(uint8_t row, bool isSelected) {
@@ -432,32 +356,6 @@ static void lcd_implementation_mark_as_selected(uint8_t row, bool isSelected) {
   }
   u8g.setPrintPos((START_COL) * (DOG_CHAR_WIDTH), (row + 1) * (DOG_CHAR_HEIGHT));
 }
-
-#if ENABLED(LCD_INFO_MENU) || ENABLED(FILAMENT_CHANGE_FEATURE)
-
-  static void lcd_implementation_drawmenu_static(uint8_t row, const char* pstr, bool center=true, bool invert=false, const char* valstr=NULL) {
-
-    lcd_implementation_mark_as_selected(row, invert);
-
-    char c;
-    int8_t n = LCD_WIDTH - (START_COL);
-
-    if (center && !valstr) {
-      int8_t pad = (LCD_WIDTH - lcd_strlen_P(pstr)) / 2;
-      while (--pad >= 0) { lcd_print(' '); n--; }
-    }
-    while (n > 0 && (c = pgm_read_byte(pstr))) {
-      n -= lcd_print(c);
-      pstr++;
-    }
-    if (valstr) while (n > 0 && (c = *valstr)) {
-      n -= lcd_print(c);
-      valstr++;
-    }
-    while (n-- > 0) lcd_print(' ');
-  }
-
-#endif // LCD_INFO_MENU || FILAMENT_CHANGE_FEATURE
 
 static void lcd_implementation_drawmenu_generic(bool isSelected, uint8_t row, const char* pstr, char pre_char, char post_char) {
   UNUSED(pre_char);

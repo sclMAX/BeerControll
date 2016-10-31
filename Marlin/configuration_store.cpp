@@ -133,10 +133,6 @@
 #include "ultralcd.h"
 #include "configuration_store.h"
 
-#if ENABLED(MESH_BED_LEVELING)
-  #include "mesh_bed_leveling.h"
-#endif
-
 uint16_t eeprom_checksum;
 const char version[4] = EEPROM_VERSION;
 
@@ -223,68 +219,31 @@ void Config_StoreSettings()  {
   EEPROM_WRITE(planner.max_z_jerk);
   EEPROM_WRITE(planner.max_e_jerk);
   EEPROM_WRITE(home_offset);
-
-  #if ENABLED(MESH_BED_LEVELING)
-    // Compile time test that sizeof(mbl.z_values) is as expected
-    typedef char c_assert[(sizeof(mbl.z_values) == (MESH_NUM_X_POINTS) * (MESH_NUM_Y_POINTS) * sizeof(dummy)) ? 1 : -1];
-    uint8_t mesh_num_x = MESH_NUM_X_POINTS,
-            mesh_num_y = MESH_NUM_Y_POINTS,
-            dummy_uint8 = mbl.status & _BV(MBL_STATUS_HAS_MESH_BIT);
-    EEPROM_WRITE(dummy_uint8);
-    EEPROM_WRITE(mbl.z_offset);
-    EEPROM_WRITE(mesh_num_x);
-    EEPROM_WRITE(mesh_num_y);
-    EEPROM_WRITE(mbl.z_values);
-  #else
-    // For disabled MBL write a default mesh
-    uint8_t mesh_num_x = 3,
-            mesh_num_y = 3,
-            dummy_uint8 = 0;
-    dummy = 0.0f;
-    EEPROM_WRITE(dummy_uint8);
-    EEPROM_WRITE(dummy);
-    EEPROM_WRITE(mesh_num_x);
-    EEPROM_WRITE(mesh_num_y);
-    for (uint8_t q = 0; q < mesh_num_x * mesh_num_y; q++) EEPROM_WRITE(dummy);
-  #endif // MESH_BED_LEVELING
+  // For disabled MBL write a default mesh
+  uint8_t mesh_num_x = 3,
+          mesh_num_y = 3,
+          dummy_uint8 = 0;
+  dummy = 0.0f;
+  EEPROM_WRITE(dummy_uint8);
+  EEPROM_WRITE(dummy);
+  EEPROM_WRITE(mesh_num_x);
+  EEPROM_WRITE(mesh_num_y);
+  for (uint8_t q = 0; q < mesh_num_x * mesh_num_y; q++) EEPROM_WRITE(dummy);
+ 
 
   #if !HAS_BED_PROBE
     float zprobe_zoffset = 0;
   #endif
   EEPROM_WRITE(zprobe_zoffset);
-
-  // 9 floats for DELTA / Z_DUAL_ENDSTOPS
-  #if ENABLED(DELTA)
-    EEPROM_WRITE(endstop_adj);               // 3 floats
-    EEPROM_WRITE(delta_radius);              // 1 float
-    EEPROM_WRITE(delta_diagonal_rod);        // 1 float
-    EEPROM_WRITE(delta_segments_per_second); // 1 float
-    EEPROM_WRITE(delta_diagonal_rod_trim_tower_1);  // 1 float
-    EEPROM_WRITE(delta_diagonal_rod_trim_tower_2);  // 1 float
-    EEPROM_WRITE(delta_diagonal_rod_trim_tower_3);  // 1 float
-  #elif ENABLED(Z_DUAL_ENDSTOPS)
-    EEPROM_WRITE(z_endstop_adj);            // 1 float
-    dummy = 0.0f;
-    for (uint8_t q = 8; q--;) EEPROM_WRITE(dummy);
-  #else
-    dummy = 0.0f;
-    for (uint8_t q = 9; q--;) EEPROM_WRITE(dummy);
-  #endif
-
-  #if DISABLED(ULTIPANEL)
-    int preheatHotendTemp1 = PREHEAT_1_TEMP_HOTEND, preheatBedTemp1 = PREHEAT_1_TEMP_BED, preheatFanSpeed1 = PREHEAT_1_FAN_SPEED,
-        preheatHotendTemp2 = PREHEAT_2_TEMP_HOTEND, preheatBedTemp2 = PREHEAT_2_TEMP_BED, preheatFanSpeed2 = PREHEAT_2_FAN_SPEED;
-  #endif // !ULTIPANEL
-
+  dummy = 0.0f;
+  for (uint8_t q = 9; q--;) EEPROM_WRITE(dummy);
   EEPROM_WRITE(preheatHotendTemp1);
   EEPROM_WRITE(preheatBedTemp1);
   EEPROM_WRITE(preheatFanSpeed1);
   EEPROM_WRITE(preheatHotendTemp2);
   EEPROM_WRITE(preheatBedTemp2);
   EEPROM_WRITE(preheatFanSpeed2);
-
   for (uint8_t e = 0; e < MAX_EXTRUDERS; e++) {
-
     #if ENABLED(PIDTEMP)
       if (e < HOTENDS) {
         EEPROM_WRITE(PID_PARAM(Kp, e));
@@ -333,30 +292,7 @@ void Config_StoreSettings()  {
     dummy = 1.0f;
     EEPROM_WRITE(dummy);
   #endif
-
-  #if ENABLED(FWRETRACT)
-    EEPROM_WRITE(autoretract_enabled);
-    EEPROM_WRITE(retract_length);
-    #if EXTRUDERS > 1
-      EEPROM_WRITE(retract_length_swap);
-    #else
-      dummy = 0.0f;
-      EEPROM_WRITE(dummy);
-    #endif
-    EEPROM_WRITE(retract_feedrate_mm_s);
-    EEPROM_WRITE(retract_zlift);
-    EEPROM_WRITE(retract_recover_length);
-    #if EXTRUDERS > 1
-      EEPROM_WRITE(retract_recover_length_swap);
-    #else
-      dummy = 0.0f;
-      EEPROM_WRITE(dummy);
-    #endif
-    EEPROM_WRITE(retract_recover_feedrate_mm_s);
-  #endif // FWRETRACT
-
   EEPROM_WRITE(volumetric_enabled);
-
   // Save filament sizes
   for (uint8_t q = 0; q < MAX_EXTRUDERS; q++) {
     if (q < COUNT(filament_size)) dummy = filament_size[q];
@@ -523,25 +459,6 @@ void Config_RetrieveSettings() {
       EEPROM_READ(dummy);
     #endif
 
-    #if ENABLED(FWRETRACT)
-      EEPROM_READ(autoretract_enabled);
-      EEPROM_READ(retract_length);
-      #if EXTRUDERS > 1
-        EEPROM_READ(retract_length_swap);
-      #else
-        EEPROM_READ(dummy);
-      #endif
-      EEPROM_READ(retract_feedrate_mm_s);
-      EEPROM_READ(retract_zlift);
-      EEPROM_READ(retract_recover_length);
-      #if EXTRUDERS > 1
-        EEPROM_READ(retract_recover_length_swap);
-      #else
-        EEPROM_READ(dummy);
-      #endif
-      EEPROM_READ(retract_recover_feedrate_mm_s);
-    #endif // FWRETRACT
-
     EEPROM_READ(volumetric_enabled);
 
     for (uint8_t q = 0; q < MAX_EXTRUDERS; q++) {
@@ -654,21 +571,6 @@ void Config_ResetDefault() {
     thermalManager.bedKp = DEFAULT_bedKp;
     thermalManager.bedKi = scalePID_i(DEFAULT_bedKi);
     thermalManager.bedKd = scalePID_d(DEFAULT_bedKd);
-  #endif
-
-  #if ENABLED(FWRETRACT)
-    autoretract_enabled = false;
-    retract_length = RETRACT_LENGTH;
-    #if EXTRUDERS > 1
-      retract_length_swap = RETRACT_LENGTH_SWAP;
-    #endif
-    retract_feedrate_mm_s = RETRACT_FEEDRATE;
-    retract_zlift = RETRACT_ZLIFT;
-    retract_recover_length = RETRACT_RECOVER_LENGTH;
-    #if EXTRUDERS > 1
-      retract_recover_length_swap = RETRACT_RECOVER_LENGTH_SWAP;
-    #endif
-    retract_recover_feedrate_mm_s = RETRACT_RECOVER_FEEDRATE;
   #endif
 
   volumetric_enabled = false;
@@ -905,41 +807,6 @@ void Config_PrintSettings(bool forReplay) {
     SERIAL_ECHOPAIR("  M250 C", lcd_contrast);
     SERIAL_EOL;
   #endif
-
-  #if ENABLED(FWRETRACT)
-
-    CONFIG_ECHO_START;
-    if (!forReplay) {
-      SERIAL_ECHOLNPGM("Retract: S=Length (mm) F:Speed (mm/m) Z: ZLift (mm)");
-      CONFIG_ECHO_START;
-    }
-    SERIAL_ECHOPAIR("  M207 S", retract_length);
-    #if EXTRUDERS > 1
-      SERIAL_ECHOPAIR(" W", retract_length_swap);
-    #endif
-    SERIAL_ECHOPAIR(" F", MMS_TO_MMM(retract_feedrate_mm_s));
-    SERIAL_ECHOPAIR(" Z", retract_zlift);
-    SERIAL_EOL;
-    CONFIG_ECHO_START;
-    if (!forReplay) {
-      SERIAL_ECHOLNPGM("Recover: S=Extra length (mm) F:Speed (mm/m)");
-      CONFIG_ECHO_START;
-    }
-    SERIAL_ECHOPAIR("  M208 S", retract_recover_length);
-    #if EXTRUDERS > 1
-      SERIAL_ECHOPAIR(" W", retract_recover_length_swap);
-    #endif
-    SERIAL_ECHOPAIR(" F", MMS_TO_MMM(retract_recover_feedrate_mm_s));
-    SERIAL_EOL;
-    CONFIG_ECHO_START;
-    if (!forReplay) {
-      SERIAL_ECHOLNPGM("Auto-Retract: S=0 to disable, 1 to interpret extrude-only moves as retracts or recoveries");
-      CONFIG_ECHO_START;
-    }
-    SERIAL_ECHOPAIR("  M209 S", autoretract_enabled ? 1 : 0);
-    SERIAL_EOL;
-
-  #endif // FWRETRACT
 
   /**
    * Volumetric extrusion M200

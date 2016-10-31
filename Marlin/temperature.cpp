@@ -29,10 +29,6 @@
 #include "temperature.h"
 #include "thermistortables.h"
 #include "language.h"
-#if ENABLED(BABYSTEPPING)
-  #include "stepper.h"
-#endif
-
 #if ENABLED(USE_WATCHDOG)
   #include "watchdog.h"
 #endif
@@ -92,10 +88,6 @@ unsigned char Temperature::soft_pwm_bed;
   float Temperature::bedKp = DEFAULT_bedKp,
         Temperature::bedKi = ((DEFAULT_bedKi) * PID_dT),
         Temperature::bedKd = ((DEFAULT_bedKd) / PID_dT);
-#endif
-
-#if ENABLED(BABYSTEPPING)
-  volatile int Temperature::babystepsTodo[3] = { 0 };
 #endif
 
 #if ENABLED(THERMAL_PROTECTION_HOTENDS) && WATCH_TEMP_PERIOD > 0
@@ -1819,19 +1811,4 @@ void Temperature::isr() {
     #endif
 
   } // temp_count >= OVERSAMPLENR
-
-  #if ENABLED(BABYSTEPPING)
-    for (uint8_t axis = X_AXIS; axis <= Z_AXIS; axis++) {
-      int curTodo = babystepsTodo[axis]; //get rid of volatile for performance
-
-      if (curTodo > 0) {
-        stepper.babystep(axis,/*fwd*/true);
-        babystepsTodo[axis]--; //fewer to do next time
-      }
-      else if (curTodo < 0) {
-        stepper.babystep(axis,/*fwd*/false);
-        babystepsTodo[axis]++; //fewer to do next time
-      }
-    }
-  #endif //BABYSTEPPING
 }

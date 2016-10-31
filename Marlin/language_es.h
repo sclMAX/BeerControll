@@ -7,9 +7,6 @@
  */
 #ifndef LANGUAGE_ES_H
 #define LANGUAGE_ES_H
-
-// Define SIMULATE_ROMFONT to see what is seen on the character based display defined in Configuration.h
-//#define SIMULATE_ROMFONT
 #define DISPLAY_CHARSET_ISO10646_1
 
 #define WELCOME_MSG                         MACHINE_NAME " lista."
@@ -44,7 +41,7 @@
 #define MSG_H2                              "2"
 #define MSG_H3                              "3"
 #define MSG_H4                              "4"
-#define MSG_COOLDOWN                        "Enfriar"
+#define MSG_COOLDOWN                        "Apagar Quemadores"
 #define MSG_SWITCH_PS_ON                    "Encender"
 #define MSG_SWITCH_PS_OFF                   "Apagar"
 #define MSG_EXTRUDE                         "Extruir"
@@ -120,7 +117,7 @@
 #define MSG_RESTORE_FAILSAFE                "Restaurar memoria."
 #define MSG_REFRESH                         "Volver a cargar"
 #define MSG_WATCH                           "Informacion"
-#define MSG_PREPARE                         "Preparar"
+#define MSG_PREPARE                         "Precalentar"
 #define MSG_TUNE                            "Ajustar"
 #define MSG_PAUSE_PRINT                     "Pausar impresion"
 #define MSG_RESUME_PRINT                    "Reanudar impresion"

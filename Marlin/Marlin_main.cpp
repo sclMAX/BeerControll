@@ -41,10 +41,6 @@
   #endif
 #endif // AUTO_BED_LEVELING_FEATURE
 
-#if ENABLED(MESH_BED_LEVELING)
-  #include "mesh_bed_leveling.h"
-#endif
-
 #if ENABLED(BEZIER_CURVE_SUPPORT)
   #include "planner_bezier.h"
 #endif
@@ -368,12 +364,7 @@ static millis_t max_inactive_time = 0;
 static millis_t stepper_inactive_time = (DEFAULT_STEPPER_DEACTIVE_TIME) * 1000UL;
 
 // Print Job Timer
-#if ENABLED(PRINTCOUNTER)
-  PrintCounter print_job_timer = PrintCounter();
-#else
-  Stopwatch print_job_timer = Stopwatch();
-#endif
-
+Stopwatch print_job_timer = Stopwatch();
 // Buzzer - I2C on the LCD or a BEEPER_PIN
 #if ENABLED(LCD_USE_I2C_BUZZER)
   #define BUZZ(d,f) lcd_buzz(d, f)
@@ -425,22 +416,6 @@ static uint8_t target_extruder;
   int baricuda_valve_pressure = 0;
   int baricuda_e_to_p_pressure = 0;
 #endif
-
-#if ENABLED(FWRETRACT)
-
-  bool autoretract_enabled = false;
-  bool retracted[EXTRUDERS] = { false };
-  bool retracted_swap[EXTRUDERS] = { false };
-
-  float retract_length = RETRACT_LENGTH;
-  float retract_length_swap = RETRACT_LENGTH_SWAP;
-  float retract_feedrate_mm_s = RETRACT_FEEDRATE;
-  float retract_zlift = RETRACT_ZLIFT;
-  float retract_recover_length = RETRACT_RECOVER_LENGTH;
-  float retract_recover_length_swap = RETRACT_RECOVER_LENGTH_SWAP;
-  float retract_recover_feedrate_mm_s = RETRACT_RECOVER_FEEDRATE;
-
-#endif // FWRETRACT
 
 #if ENABLED(ULTIPANEL) && HAS_POWER_SWITCH
   bool powersupply =
@@ -505,22 +480,6 @@ static uint8_t target_extruder;
   int filwidth_delay_index2 = -1;  //index into ring buffer - set to -1 on startup to indicate ring buffer needs to be initialized
   int meas_delay_cm = MEASUREMENT_DELAY_CM;  //distance delay setting
 #endif
-
-#if ENABLED(FILAMENT_RUNOUT_SENSOR)
-  static bool filament_ran_out = false;
-#endif
-
-#if ENABLED(FILAMENT_CHANGE_FEATURE)
-  FilamentChangeMenuResponse filament_change_menu_response;
-#endif
-
-#if ENABLED(MIXING_EXTRUDER)
-  float mixing_factor[MIXING_STEPPERS];
-  #if MIXING_VIRTUAL_TOOLS > 1
-    float mixing_virtual_tool_mix[MIXING_VIRTUAL_TOOLS][MIXING_STEPPERS];
-  #endif
-#endif
-
 static bool send_ok[BUFSIZE];
 
 #if HAS_SERVOS
@@ -2492,50 +2451,6 @@ static void homeaxis(AxisEnum axis) {
   #endif
 }
 
-#if ENABLED(FWRETRACT)
-
-  void retract(bool retracting, bool swapping = false) {
-
-    if (retracting == retracted[active_extruder]) return;
-
-    float old_feedrate_mm_m = feedrate_mm_m;
-
-    set_destination_to_current();
-
-    if (retracting) {
-
-      feedrate_mm_m = MMS_TO_MMM(retract_feedrate_mm_s);
-      current_position[E_AXIS] += (swapping ? retract_length_swap : retract_length) / volumetric_multiplier[active_extruder];
-      sync_plan_position_e();
-      prepare_move_to_destination();
-
-      if (retract_zlift > 0.01) {
-        current_position[Z_AXIS] -= retract_zlift;
-        SYNC_PLAN_POSITION_KINEMATIC();
-        prepare_move_to_destination();
-      }
-    }
-    else {
-
-      if (retract_zlift > 0.01) {
-        current_position[Z_AXIS] += retract_zlift;
-        SYNC_PLAN_POSITION_KINEMATIC();
-      }
-
-      feedrate_mm_m = MMS_TO_MMM(retract_recover_feedrate_mm_s);
-      float move_e = swapping ? retract_length_swap + retract_recover_length_swap : retract_length + retract_recover_length;
-      current_position[E_AXIS] -= move_e / volumetric_multiplier[active_extruder];
-      sync_plan_position_e();
-      prepare_move_to_destination();
-    }
-
-    feedrate_mm_m = old_feedrate_mm_m;
-    retracted[active_extruder] = retracting;
-
-  } // retract()
-
-#endif // FWRETRACT
-
 #if ENABLED(MIXING_EXTRUDER)
 
   void normalize_mix() {
@@ -2592,12 +2507,6 @@ void gcode_get_destination() {
 
   if (code_seen('F') && code_value_linear_units() > 0.0)
     feedrate_mm_m = code_value_linear_units();
-
-  #if ENABLED(PRINTCOUNTER)
-    if (!DEBUGGING(DRYRUN))
-      print_job_timer.incFilamentUsed(destination[E_AXIS] - current_position[E_AXIS]);
-  #endif
-
   // Get ABCDHI mixing factors
   #if ENABLED(MIXING_EXTRUDER) && ENABLED(DIRECT_MIXING_IN_G1)
     gcode_get_mix();
@@ -2650,22 +2559,6 @@ void unknown_command_error() {
 inline void gcode_G0_G1() {
   if (IsRunning()) {
     gcode_get_destination(); // For X Y Z E F
-
-    #if ENABLED(FWRETRACT)
-
-      if (autoretract_enabled && !(code_seen('X') || code_seen('Y') || code_seen('Z')) && code_seen('E')) {
-        float echange = destination[E_AXIS] - current_position[E_AXIS];
-        // Is this move an attempt to retract or recover?
-        if ((echange < -MIN_RETRACT && !retracted[active_extruder]) || (echange > MIN_RETRACT && retracted[active_extruder])) {
-          current_position[E_AXIS] = destination[E_AXIS]; // hide the slicer-generated retract/recover from calculations
-          sync_plan_position_e();  // AND from the planner
-          retract(!retracted[active_extruder]);
-          return;
-        }
-      }
-
-    #endif //FWRETRACT
-
     prepare_move_to_destination();
   }
 }
@@ -2750,27 +2643,6 @@ inline void gcode_G4() {
   }
 
 #endif // BEZIER_CURVE_SUPPORT
-
-#if ENABLED(FWRETRACT)
-
-  /**
-   * G10 - Retract filament according to settings of M207
-   * G11 - Recover filament according to settings of M208
-   */
-  inline void gcode_G10_G11(bool doRetract=false) {
-    #if EXTRUDERS > 1
-      if (doRetract) {
-        retracted_swap[active_extruder] = (code_seen('S') && code_value_bool()); // checks for swap retract argument
-      }
-    #endif
-    retract(doRetract
-     #if EXTRUDERS > 1
-      , retracted_swap[active_extruder]
-     #endif
-    );
-  }
-
-#endif //FWRETRACT
 
 #if ENABLED(NOZZLE_CLEAN_FEATURE)
   /**
@@ -3929,9 +3801,6 @@ inline void gcode_G92() {
       lcd_setstatus(args, true);
     else {
       LCD_MESSAGEPGM(MSG_USERWAIT);
-      #if ENABLED(LCD_PROGRESS_BAR) && PROGRESS_MSG_EXPIRE > 0
-        dontExpireStatus();
-      #endif
     }
 
     lcd_ignore_click();
@@ -4409,18 +4278,6 @@ inline void gcode_M76() { print_job_timer.pause(); }
  * M77: Stop print timer
  */
 inline void gcode_M77() { print_job_timer.stop(); }
-
-#if ENABLED(PRINTCOUNTER)
-  /**
-   * M78: Show print statistics
-   */
-  inline void gcode_M78() {
-    // "M78 S78" will reset the statistics
-    if (code_seen('S') && code_value_int() == 78)
-      print_job_timer.initStats();
-    else print_job_timer.showStats();
-  }
-#endif
 
 /**
  * M104: Set hot end temperature
@@ -5461,64 +5318,6 @@ inline void gcode_M206() {
 
 #endif // !DELTA && Z_DUAL_ENDSTOPS
 
-#if ENABLED(FWRETRACT)
-
-  /**
-   * M207: Set firmware retraction values
-   *
-   *   S[+units]    retract_length
-   *   W[+units]    retract_length_swap (multi-extruder)
-   *   F[units/min] retract_feedrate_mm_s
-   *   Z[units]     retract_zlift
-   */
-  inline void gcode_M207() {
-    if (code_seen('S')) retract_length = code_value_axis_units(E_AXIS);
-    if (code_seen('F')) retract_feedrate_mm_s = MMM_TO_MMS(code_value_axis_units(E_AXIS));
-    if (code_seen('Z')) retract_zlift = code_value_axis_units(Z_AXIS);
-    #if EXTRUDERS > 1
-      if (code_seen('W')) retract_length_swap = code_value_axis_units(E_AXIS);
-    #endif
-  }
-
-  /**
-   * M208: Set firmware un-retraction values
-   *
-   *   S[+units]    retract_recover_length (in addition to M207 S*)
-   *   W[+units]    retract_recover_length_swap (multi-extruder)
-   *   F[units/min] retract_recover_feedrate_mm_s
-   */
-  inline void gcode_M208() {
-    if (code_seen('S')) retract_recover_length = code_value_axis_units(E_AXIS);
-    if (code_seen('F')) retract_recover_feedrate_mm_s = MMM_TO_MMS(code_value_axis_units(E_AXIS));
-    #if EXTRUDERS > 1
-      if (code_seen('W')) retract_recover_length_swap = code_value_axis_units(E_AXIS);
-    #endif
-  }
-
-  /**
-   * M209: Enable automatic retract (M209 S1)
-   *       detect if the slicer did not support G10/11: every normal extrude-only move will be classified as retract depending on the direction.
-   */
-  inline void gcode_M209() {
-    if (code_seen('S')) {
-      int t = code_value_int();
-      switch (t) {
-        case 0:
-          autoretract_enabled = false;
-          break;
-        case 1:
-          autoretract_enabled = true;
-          break;
-        default:
-          unknown_command_error();
-          return;
-      }
-      for (int i = 0; i < EXTRUDERS; i++) retracted[i] = false;
-    }
-  }
-
-#endif // FWRETRACT
-
 #if HOTENDS > 1
 
   /**
@@ -6217,185 +6016,6 @@ inline void gcode_M503() {
 
 #endif // HAS_BED_PROBE
 
-#if ENABLED(FILAMENT_CHANGE_FEATURE)
-
-  /**
-   * M600: Pause for filament change
-   *
-   *  E[distance] - Retract the filament this far (negative value)
-   *  Z[distance] - Move the Z axis by this distance
-   *  X[position] - Move to this X position, with Y
-   *  Y[position] - Move to this Y position, with X
-   *  L[distance] - Retract distance for removal (manual reload)
-   *
-   *  Default values are used for omitted arguments.
-   *
-   */
-  inline void gcode_M600() {
-
-    if (thermalManager.tooColdToExtrude(active_extruder)) {
-      SERIAL_ERROR_START;
-      SERIAL_ERRORLNPGM(MSG_TOO_COLD_FOR_M600);
-      return;
-    }
-
-    // Show initial message and wait for synchronize steppers
-    lcd_filament_change_show_message(FILAMENT_CHANGE_MESSAGE_INIT);
-    stepper.synchronize();
-
-    float lastpos[NUM_AXIS];
-
-    // Save current position of all axes
-    LOOP_XYZE(i)
-      lastpos[i] = destination[i] = current_position[i];
-
-    // Define runplan for move axes
-    #if ENABLED(DELTA)
-      #define RUNPLAN(RATE_MM_S) inverse_kinematics(destination); \
-                                 planner.buffer_line(delta[X_AXIS], delta[Y_AXIS], delta[Z_AXIS], destination[E_AXIS], RATE_MM_S, active_extruder);
-    #else
-      #define RUNPLAN(RATE_MM_S) line_to_destination(MMS_TO_MMM(RATE_MM_S));
-    #endif
-
-    KEEPALIVE_STATE(IN_HANDLER);
-
-    // Initial retract before move to filament change position
-    if (code_seen('E')) destination[E_AXIS] += code_value_axis_units(E_AXIS);
-    #if defined(FILAMENT_CHANGE_RETRACT_LENGTH) && FILAMENT_CHANGE_RETRACT_LENGTH > 0
-      else destination[E_AXIS] -= FILAMENT_CHANGE_RETRACT_LENGTH;
-    #endif
-
-    RUNPLAN(FILAMENT_CHANGE_RETRACT_FEEDRATE);
-
-    // Lift Z axis
-    float z_lift = code_seen('Z') ? code_value_axis_units(Z_AXIS) :
-      #if defined(FILAMENT_CHANGE_Z_ADD) && FILAMENT_CHANGE_Z_ADD > 0
-        FILAMENT_CHANGE_Z_ADD
-      #else
-        0
-      #endif
-    ;
-
-    if (z_lift > 0) {
-      destination[Z_AXIS] += z_lift;
-      NOMORE(destination[Z_AXIS], Z_MAX_POS);
-      RUNPLAN(FILAMENT_CHANGE_Z_FEEDRATE);
-    }
-
-    // Move XY axes to filament exchange position
-    if (code_seen('X')) destination[X_AXIS] = code_value_axis_units(X_AXIS);
-    #ifdef FILAMENT_CHANGE_X_POS
-      else destination[X_AXIS] = FILAMENT_CHANGE_X_POS;
-    #endif
-
-    if (code_seen('Y')) destination[Y_AXIS] = code_value_axis_units(Y_AXIS);
-    #ifdef FILAMENT_CHANGE_Y_POS
-      else destination[Y_AXIS] = FILAMENT_CHANGE_Y_POS;
-    #endif
-
-    RUNPLAN(FILAMENT_CHANGE_XY_FEEDRATE);
-
-    stepper.synchronize();
-    lcd_filament_change_show_message(FILAMENT_CHANGE_MESSAGE_UNLOAD);
-
-    // Unload filament
-    if (code_seen('L')) destination[E_AXIS] += code_value_axis_units(E_AXIS);
-    #if defined(FILAMENT_CHANGE_UNLOAD_LENGTH) && FILAMENT_CHANGE_UNLOAD_LENGTH > 0
-      else destination[E_AXIS] -= FILAMENT_CHANGE_UNLOAD_LENGTH;
-    #endif
-
-    RUNPLAN(FILAMENT_CHANGE_UNLOAD_FEEDRATE);
-
-    // Synchronize steppers and then disable extruders steppers for manual filament changing
-    stepper.synchronize();
-    disable_e0();
-    disable_e1();
-    disable_e2();
-    disable_e3();
-    delay(100);
-
-    #if HAS_BUZZER
-      millis_t next_tick = 0;
-    #endif
-
-    // Wait for filament insert by user and press button
-    lcd_filament_change_show_message(FILAMENT_CHANGE_MESSAGE_INSERT);
-
-    while (!lcd_clicked()) {
-      #if HAS_BUZZER
-        millis_t ms = millis();
-        if (ms >= next_tick) {
-          BUZZ(300, 2000);
-          next_tick = ms + 2500; // Beep every 2.5s while waiting
-        }
-      #endif
-      idle(true);
-    }
-    delay(100);
-    while (lcd_clicked()) idle(true);
-    delay(100);
-
-    // Show load message
-    lcd_filament_change_show_message(FILAMENT_CHANGE_MESSAGE_LOAD);
-
-    // Load filament
-    if (code_seen('L')) destination[E_AXIS] -= code_value_axis_units(E_AXIS);
-    #if defined(FILAMENT_CHANGE_LOAD_LENGTH) && FILAMENT_CHANGE_LOAD_LENGTH > 0
-      else destination[E_AXIS] += FILAMENT_CHANGE_LOAD_LENGTH;
-    #endif
-
-    RUNPLAN(FILAMENT_CHANGE_LOAD_FEEDRATE);
-    stepper.synchronize();
-
-    #if defined(FILAMENT_CHANGE_EXTRUDE_LENGTH) && FILAMENT_CHANGE_EXTRUDE_LENGTH > 0
-      do {
-        // Extrude filament to get into hotend
-        lcd_filament_change_show_message(FILAMENT_CHANGE_MESSAGE_EXTRUDE);
-        destination[E_AXIS] += FILAMENT_CHANGE_EXTRUDE_LENGTH;
-        RUNPLAN(FILAMENT_CHANGE_EXTRUDE_FEEDRATE);
-        stepper.synchronize();
-        // Ask user if more filament should be extruded
-        KEEPALIVE_STATE(PAUSED_FOR_USER);
-        lcd_filament_change_show_message(FILAMENT_CHANGE_MESSAGE_OPTION);
-        while (filament_change_menu_response == FILAMENT_CHANGE_RESPONSE_WAIT_FOR) idle(true);
-        KEEPALIVE_STATE(IN_HANDLER);
-      } while (filament_change_menu_response != FILAMENT_CHANGE_RESPONSE_RESUME_PRINT);
-    #endif
-
-    lcd_filament_change_show_message(FILAMENT_CHANGE_MESSAGE_RESUME);
-
-    KEEPALIVE_STATE(IN_HANDLER);
-
-    // Set extruder to saved position
-    current_position[E_AXIS] = lastpos[E_AXIS];
-    destination[E_AXIS] = lastpos[E_AXIS];
-    planner.set_e_position_mm(current_position[E_AXIS]);
-
-    #if ENABLED(DELTA)
-      // Move XYZ to starting position, then E
-      inverse_kinematics(lastpos);
-      planner.buffer_line(delta[X_AXIS], delta[Y_AXIS], delta[Z_AXIS], destination[E_AXIS], FILAMENT_CHANGE_XY_FEEDRATE, active_extruder);
-      planner.buffer_line(delta[X_AXIS], delta[Y_AXIS], delta[Z_AXIS], lastpos[E_AXIS], FILAMENT_CHANGE_XY_FEEDRATE, active_extruder);
-    #else
-      // Move XY to starting position, then Z, then E
-      destination[X_AXIS] = lastpos[X_AXIS];
-      destination[Y_AXIS] = lastpos[Y_AXIS];
-      RUNPLAN(FILAMENT_CHANGE_XY_FEEDRATE);
-      destination[Z_AXIS] = lastpos[Z_AXIS];
-      RUNPLAN(FILAMENT_CHANGE_Z_FEEDRATE);
-    #endif
-    stepper.synchronize();
-
-    #if ENABLED(FILAMENT_RUNOUT_SENSOR)
-      filament_ran_out = false;
-    #endif
-
-    // Show status screen
-    lcd_filament_change_show_message(FILAMENT_CHANGE_MESSAGE_STATUS);
-  }
-
-#endif // FILAMENT_CHANGE_FEATURE
-
 #if ENABLED(DUAL_X_CARRIAGE)
 
   /**
@@ -7057,13 +6677,6 @@ void process_next_command() {
           break;
       #endif // BEZIER_CURVE_SUPPORT
 
-      #if ENABLED(FWRETRACT)
-        case 10: // G10: retract
-        case 11: // G11: retract_recover
-          gcode_G10_G11(codenum == 10);
-          break;
-      #endif // FWRETRACT
-
       #if ENABLED(NOZZLE_CLEAN_FEATURE)
         case 12:
           gcode_G12(); // G12: Nozzle Clean
@@ -7200,13 +6813,6 @@ void process_next_command() {
       case 77: // Stop print timer
         gcode_M77();
         break;
-
-      #if ENABLED(PRINTCOUNTER)
-        case 78: // Show print statistics
-          gcode_M78();
-          break;
-      #endif
-
       #if ENABLED(M100_FREE_MEMORY_WATCHER)
         case 100:
           gcode_M100();
@@ -7430,18 +7036,6 @@ void process_next_command() {
           break;
       #endif
 
-      #if ENABLED(FWRETRACT)
-        case 207: // M207 - Set Retract Length: S<length>, Feedrate: F<units/min>, and Z lift: Z<distance>
-          gcode_M207();
-          break;
-        case 208: // M208 - Set Recover (unretract) Additional (!) Length: S<length> and Feedrate: F<units/min>
-          gcode_M208();
-          break;
-        case 209: // M209 - Turn Automatic Retract Detection on/off: S<bool> (For slicers that don't support G10/11). Every normal extrude-only move will be classified as retract depending on the direction.
-          gcode_M209();
-          break;
-      #endif // FWRETRACT
-
       #if HOTENDS > 1
         case 218: // M218 - Set a tool offset: T<index> X<offset> Y<offset>
           gcode_M218();
@@ -7592,13 +7186,6 @@ void process_next_command() {
           gcode_M851();
           break;
       #endif // HAS_BED_PROBE
-
-      #if ENABLED(FILAMENT_CHANGE_FEATURE)
-        case 600: //Pause for filament change X[pos] Y[pos] Z[relative lift] E[initial retract] L[later retract distance for removal]
-          gcode_M600();
-          break;
-      #endif // FILAMENT_CHANGE_FEATURE
-
       #if ENABLED(DUAL_X_CARRIAGE)
         case 605:
           gcode_M605();
@@ -8449,25 +8036,11 @@ void disable_all_steppers() {
 /**
  * Standard idle routine keeps the machine alive
  */
-void idle(
-  #if ENABLED(FILAMENT_CHANGE_FEATURE)
-    bool no_stepper_sleep/*=false*/
-  #endif
-) {
+void idle() {
   lcd_update();
   host_keepalive();
-  manage_inactivity(
-    #if ENABLED(FILAMENT_CHANGE_FEATURE)
-      no_stepper_sleep
-    #endif
-  );
-
+  manage_inactivity();
   thermalManager.manage_heater();
-
-  #if ENABLED(PRINTCOUNTER)
-    print_job_timer.tick();
-  #endif
-
   #if HAS_BUZZER && PIN_EXISTS(BEEPER)
     buzzer.tick();
   #endif

@@ -66,10 +66,6 @@
 
 #include "Marlin.h"
 
-#if ENABLED(MESH_BED_LEVELING)
-  #include "mesh_bed_leveling.h"
-#endif
-
 Planner planner;
 
   // public:

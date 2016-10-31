@@ -175,23 +175,11 @@ extern volatile uint8_t buttons;  //an extended version of the last checked butt
 
 #include "utf_mapper.h"
 
-#if ENABLED(LCD_PROGRESS_BAR)
-  static millis_t progress_bar_ms = 0;
-  #if PROGRESS_MSG_EXPIRE > 0
-    static millis_t expire_status_ms = 0;
-  #endif
-  #define LCD_STR_PROGRESS  "\x03\x04\x05"
-#endif
-
 #if ENABLED(LCD_HAS_STATUS_INDICATORS)
   static void lcd_implementation_update_indicators();
 #endif
 
-static void lcd_set_custom_characters(
-  #if ENABLED(LCD_PROGRESS_BAR)
-    bool progress_bar_set = true
-  #endif
-) {
+static void lcd_set_custom_characters() {
   byte bedTemp[8] = {
     B00000,
     B11111,
@@ -272,73 +260,17 @@ static void lcd_set_custom_characters(
     B00000,
     B00000
   }; //thanks Sonny Mounicou
-
-  #if ENABLED(LCD_PROGRESS_BAR)
-    static bool char_mode = false;
-    byte progress[3][8] = { {
-      B00000,
-      B10000,
-      B10000,
-      B10000,
-      B10000,
-      B10000,
-      B10000,
-      B00000
-    }, {
-      B00000,
-      B10100,
-      B10100,
-      B10100,
-      B10100,
-      B10100,
-      B10100,
-      B00000
-    }, {
-      B00000,
-      B10101,
-      B10101,
-      B10101,
-      B10101,
-      B10101,
-      B10101,
-      B00000
-    } };
-    if (progress_bar_set != char_mode) {
-      char_mode = progress_bar_set;
-      lcd.createChar(LCD_STR_BEDTEMP[0], bedTemp);
-      lcd.createChar(LCD_STR_DEGREE[0], degree);
-      lcd.createChar(LCD_STR_THERMOMETER[0], thermometer);
-      lcd.createChar(LCD_STR_FEEDRATE[0], feedrate);
-      lcd.createChar(LCD_STR_CLOCK[0], clock);
-      if (progress_bar_set) {
-        // Progress bar characters for info screen
-        for (int i = 3; i--;) lcd.createChar(LCD_STR_PROGRESS[i], progress[i]);
-      }
-      else {
-        // Custom characters for submenus
-        lcd.createChar(LCD_STR_UPLEVEL[0], uplevel);
-        lcd.createChar(LCD_STR_REFRESH[0], refresh);
-        lcd.createChar(LCD_STR_FOLDER[0], folder);
-      }
-    }
-  #else
-    lcd.createChar(LCD_STR_BEDTEMP[0], bedTemp);
-    lcd.createChar(LCD_STR_DEGREE[0], degree);
-    lcd.createChar(LCD_STR_THERMOMETER[0], thermometer);
-    lcd.createChar(LCD_STR_UPLEVEL[0], uplevel);
-    lcd.createChar(LCD_STR_REFRESH[0], refresh);
-    lcd.createChar(LCD_STR_FOLDER[0], folder);
-    lcd.createChar(LCD_STR_FEEDRATE[0], feedrate);
-    lcd.createChar(LCD_STR_CLOCK[0], clock);
-  #endif
+  lcd.createChar(LCD_STR_BEDTEMP[0], bedTemp);
+  lcd.createChar(LCD_STR_DEGREE[0], degree);
+  lcd.createChar(LCD_STR_THERMOMETER[0], thermometer);
+  lcd.createChar(LCD_STR_UPLEVEL[0], uplevel);
+  lcd.createChar(LCD_STR_REFRESH[0], refresh);
+  lcd.createChar(LCD_STR_FOLDER[0], folder);
+  lcd.createChar(LCD_STR_FEEDRATE[0], feedrate);
+  lcd.createChar(LCD_STR_CLOCK[0], clock);
 }
 
-static void lcd_implementation_init(
-  #if ENABLED(LCD_PROGRESS_BAR)
-    bool progress_bar_set = true
-  #endif
-) {
-
+static void lcd_implementation_init() {
   #if ENABLED(LCD_I2C_TYPE_PCF8575)
     lcd.begin(LCD_WIDTH, LCD_HEIGHT);
     #ifdef LCD_I2C_PIN_BL
@@ -362,13 +294,7 @@ static void lcd_implementation_init(
   #else
     lcd.begin(LCD_WIDTH, LCD_HEIGHT);
   #endif
-
-  lcd_set_custom_characters(
-    #if ENABLED(LCD_PROGRESS_BAR)
-      progress_bar_set
-    #endif
-  );
-
+  lcd_set_custom_characters();
   lcd.clear();
 }
 
@@ -528,11 +454,7 @@ unsigned lcd_print(char c) { return charset_mapper(c); }
       logo_lines(PSTR(""));
       safe_delay(2000);
     #endif
-    lcd_set_custom_characters(
-    #if ENABLED(LCD_PROGRESS_BAR)
-      false
-    #endif
-    );
+    lcd_set_custom_characters();
   }
 
 #endif // SHOW_BOOTSCREEN
@@ -747,70 +669,8 @@ static void lcd_implementation_status_screen() {
   //
 
   lcd.setCursor(0, LCD_HEIGHT - 1);
-
-  #if ENABLED(LCD_PROGRESS_BAR)
-
-    if (card.isFileOpen()) {
-      // Draw the progress bar if the message has shown long enough
-      // or if there is no message set.
-      if (ELAPSED(millis(), progress_bar_ms + PROGRESS_BAR_MSG_TIME) || !lcd_status_message[0]) {
-        int tix = (int)(card.percentDone() * (LCD_WIDTH) * 3) / 100,
-          cel = tix / 3, rem = tix % 3, i = LCD_WIDTH;
-        char msg[LCD_WIDTH + 1], b = ' ';
-        msg[i] = '\0';
-        while (i--) {
-          if (i == cel - 1)
-            b = LCD_STR_PROGRESS[2];
-          else if (i == cel && rem != 0)
-            b = LCD_STR_PROGRESS[rem - 1];
-          msg[i] = b;
-        }
-        lcd.print(msg);
-        return;
-      }
-    } //card.isFileOpen
-
-  #elif ENABLED(FILAMENT_LCD_DISPLAY)
-
-    // Show Filament Diameter and Volumetric Multiplier %
-    // After allowing lcd_status_message to show for 5 seconds
-    if (ELAPSED(millis(), previous_lcd_status_ms + 5000UL)) {
-      lcd_printPGM(PSTR("Dia "));
-      lcd.print(ftostr12ns(filament_width_meas));
-      lcd_printPGM(PSTR(" V"));
-      lcd.print(itostr3(100.0 * volumetric_multiplier[FILAMENT_SENSOR_EXTRUDER_NUM]));
-      lcd.print('%');
-      return;
-    }
-
-  #endif // FILAMENT_LCD_DISPLAY
-
   lcd_print(lcd_status_message);
 }
-
-#if ENABLED(LCD_INFO_MENU) || ENABLED(FILAMENT_CHANGE_FEATURE)
-
-  static void lcd_implementation_drawmenu_static(uint8_t row, const char* pstr, bool center=true, bool invert=false, const char *valstr=NULL) {
-    UNUSED(invert);
-    char c;
-    int8_t n = LCD_WIDTH;
-    lcd.setCursor(0, row);
-    if (center && !valstr) {
-      int8_t pad = (LCD_WIDTH - lcd_strlen_P(pstr)) / 2;
-      while (--pad >= 0) { lcd.print(' '); n--; }
-    }
-    while (n > 0 && (c = pgm_read_byte(pstr))) {
-      n -= lcd_print(c);
-      pstr++;
-    }
-    if (valstr) while (n > 0 && (c = *valstr)) {
-      n -= lcd_print(c);
-      valstr++;
-    }
-    while (n-- > 0) lcd.print(' ');
-  }
-
-#endif // LCD_INFO_MENU || FILAMENT_CHANGE_FEATURE
 
 static void lcd_implementation_drawmenu_generic(bool sel, uint8_t row, const char* pstr, char pre_char, char post_char) {
   char c;

@@ -53,16 +53,9 @@
 #endif
 
 #include "WString.h"
-
-#if ENABLED(PRINTCOUNTER)
-  #include "printcounter.h"
-#else
-  #include "stopwatch.h"
-#endif
-
+#include "stopwatch.h"
 #define SERIAL_CHAR(x) MYSERIAL.write(x)
 #define SERIAL_EOL SERIAL_CHAR('\n')
-
 #define SERIAL_PROTOCOLCHAR(x) SERIAL_CHAR(x)
 #define SERIAL_PROTOCOL(x) MYSERIAL.print(x)
 #define SERIAL_PROTOCOL_F(x,y) MYSERIAL.print(x,y)
@@ -109,12 +102,7 @@ FORCE_INLINE void serialprintPGM(const char* str) {
   }
 }
 
-void idle(
-  #if ENABLED(FILAMENT_CHANGE_FEATURE)
-    bool no_stepper_sleep = false  // pass true to keep steppers from disabling on timeout
-  #endif
-);
-
+void idle();
 void manage_inactivity(bool ignore_stepper_queue = false);
 
 #if ENABLED(DUAL_X_CARRIAGE) || ENABLED(DUAL_NOZZLE_DUPLICATION_MODE)
@@ -338,36 +326,12 @@ float code_value_temp_diff();
   extern int baricuda_e_to_p_pressure;
 #endif
 
-#if ENABLED(FILAMENT_WIDTH_SENSOR)
-  extern float filament_width_nominal;  //holds the theoretical filament diameter i.e., 3.00 or 1.75
-  extern bool filament_sensor;  //indicates that filament sensor readings should control extrusion
-  extern float filament_width_meas; //holds the filament diameter as accurately measured
-  extern int8_t measurement_delay[];  //ring buffer to delay measurement
-  extern int filwidth_delay_index1, filwidth_delay_index2;  //ring buffer index. used by planner, temperature, and main code
-  extern int meas_delay_cm; //delay distance
-#endif
-
-#if ENABLED(FILAMENT_CHANGE_FEATURE)
-  extern FilamentChangeMenuResponse filament_change_menu_response;
-#endif
-
 #if ENABLED(PID_EXTRUSION_SCALING)
   extern int lpq_len;
 #endif
 
-#if ENABLED(FWRETRACT)
-  extern bool autoretract_enabled;
-  extern bool retracted[EXTRUDERS]; // extruder[n].retracted
-  extern float retract_length, retract_length_swap, retract_feedrate_mm_s, retract_zlift;
-  extern float retract_recover_length, retract_recover_length_swap, retract_recover_feedrate_mm_s;
-#endif
-
 // Print job timer
-#if ENABLED(PRINTCOUNTER)
-  extern PrintCounter print_job_timer;
-#else
-  extern Stopwatch print_job_timer;
-#endif
+extern Stopwatch print_job_timer;
 
 // Handling multiple extruders pins
 extern uint8_t active_extruder;

@@ -245,11 +245,6 @@ class Stepper {
       static FORCE_INLINE void set_z_lock(bool state) { locked_z_motor = state; }
       static FORCE_INLINE void set_z2_lock(bool state) { locked_z2_motor = state; }
     #endif
-
-    #if ENABLED(BABYSTEPPING)
-      static void babystep(const uint8_t axis, const bool direction); // perform a short step with a single stepper motor, outside of any convention
-    #endif
-
     static inline void kill_current_block() {
       step_events_completed = current_block->step_event_count;
     }
