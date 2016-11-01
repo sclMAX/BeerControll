@@ -41,6 +41,9 @@
 #ifndef MSG_SD_INSERTED
   #define MSG_SD_INSERTED                     "Card inserted"
 #endif
+#ifndef MSG_BACK
+  #define MSG_BACK                     "Go Back"
+#endif
 #ifndef MSG_SD_REMOVED
   #define MSG_SD_REMOVED                      "Card removed"
 #endif

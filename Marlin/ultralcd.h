@@ -50,6 +50,8 @@
 
   extern int preheatHotendTemp1;
   extern int preheatBedTemp1;
+  extern int preheatMacerador;
+  extern int preheatLicor;
   extern int preheatFanSpeed1;
   extern int preheatHotendTemp2;
   extern int preheatBedTemp2;

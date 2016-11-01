@@ -166,13 +166,6 @@ void _EEPROM_readData(int &pos, uint8_t* value, uint8_t size) {
 void Config_Postprocess() {
   // steps per s2 needs to be updated to agree with units per s2
   planner.reset_acceleration_rates();
-
-  // Make sure delta kinematics are updated before refreshing the
-  // planner position so the stepper counts will be set correctly.
-  #if ENABLED(DELTA)
-    recalc_delta_settings(delta_radius, delta_diagonal_rod);
-  #endif
-
   // Refresh steps_to_mm with the reciprocal of axis_steps_per_mm
   // and init stepper.count[], planner.position[] with current_position
   planner.refresh_positioning();
@@ -206,43 +199,8 @@ void Config_StoreSettings()  {
 
   eeprom_checksum = 0; // clear before first "real data"
 
-  EEPROM_WRITE(planner.axis_steps_per_mm);
-  EEPROM_WRITE(planner.max_feedrate_mm_s);
-  EEPROM_WRITE(planner.max_acceleration_mm_per_s2);
-  EEPROM_WRITE(planner.acceleration);
-  EEPROM_WRITE(planner.retract_acceleration);
-  EEPROM_WRITE(planner.travel_acceleration);
-  EEPROM_WRITE(planner.min_feedrate_mm_s);
-  EEPROM_WRITE(planner.min_travel_feedrate_mm_s);
-  EEPROM_WRITE(planner.min_segment_time);
-  EEPROM_WRITE(planner.max_xy_jerk);
-  EEPROM_WRITE(planner.max_z_jerk);
-  EEPROM_WRITE(planner.max_e_jerk);
-  EEPROM_WRITE(home_offset);
-  // For disabled MBL write a default mesh
-  uint8_t mesh_num_x = 3,
-          mesh_num_y = 3,
-          dummy_uint8 = 0;
-  dummy = 0.0f;
-  EEPROM_WRITE(dummy_uint8);
-  EEPROM_WRITE(dummy);
-  EEPROM_WRITE(mesh_num_x);
-  EEPROM_WRITE(mesh_num_y);
-  for (uint8_t q = 0; q < mesh_num_x * mesh_num_y; q++) EEPROM_WRITE(dummy);
- 
-
-  #if !HAS_BED_PROBE
-    float zprobe_zoffset = 0;
-  #endif
-  EEPROM_WRITE(zprobe_zoffset);
-  dummy = 0.0f;
-  for (uint8_t q = 9; q--;) EEPROM_WRITE(dummy);
-  EEPROM_WRITE(preheatHotendTemp1);
-  EEPROM_WRITE(preheatBedTemp1);
-  EEPROM_WRITE(preheatFanSpeed1);
-  EEPROM_WRITE(preheatHotendTemp2);
-  EEPROM_WRITE(preheatBedTemp2);
-  EEPROM_WRITE(preheatFanSpeed2);
+  EEPROM_WRITE(preheatMacerador);
+  EEPROM_WRITE(preheatLicor);
   for (uint8_t e = 0; e < MAX_EXTRUDERS; e++) {
     #if ENABLED(PIDTEMP)
       if (e < HOTENDS) {
@@ -316,99 +274,22 @@ void Config_StoreSettings()  {
  * M501 - Retrieve Configuration
  */
 void Config_RetrieveSettings() {
-
   EEPROM_START();
-
   char stored_ver[4];
   EEPROM_READ(stored_ver);
-
   uint16_t stored_checksum;
   EEPROM_READ(stored_checksum);
-
   //  SERIAL_ECHOPAIR("Version: [", ver);
   //  SERIAL_ECHOPAIR("] Stored version: [", stored_ver);
   //  SERIAL_ECHOLNPGM("]");
-
   if (strncmp(version, stored_ver, 3) != 0) {
     Config_ResetDefault();
   }
   else {
     float dummy = 0;
-
     eeprom_checksum = 0; // clear before reading first "real data"
-
-    // version number match
-    EEPROM_READ(planner.axis_steps_per_mm);
-    EEPROM_READ(planner.max_feedrate_mm_s);
-    EEPROM_READ(planner.max_acceleration_mm_per_s2);
-
-    EEPROM_READ(planner.acceleration);
-    EEPROM_READ(planner.retract_acceleration);
-    EEPROM_READ(planner.travel_acceleration);
-    EEPROM_READ(planner.min_feedrate_mm_s);
-    EEPROM_READ(planner.min_travel_feedrate_mm_s);
-    EEPROM_READ(planner.min_segment_time);
-    EEPROM_READ(planner.max_xy_jerk);
-    EEPROM_READ(planner.max_z_jerk);
-    EEPROM_READ(planner.max_e_jerk);
-    EEPROM_READ(home_offset);
-
-    uint8_t dummy_uint8 = 0, mesh_num_x = 0, mesh_num_y = 0;
-    EEPROM_READ(dummy_uint8);
-    EEPROM_READ(dummy);
-    EEPROM_READ(mesh_num_x);
-    EEPROM_READ(mesh_num_y);
-    #if ENABLED(MESH_BED_LEVELING)
-      mbl.status = dummy_uint8;
-      mbl.z_offset = dummy;
-      if (mesh_num_x == MESH_NUM_X_POINTS && mesh_num_y == MESH_NUM_Y_POINTS) {
-        // EEPROM data fits the current mesh
-        EEPROM_READ(mbl.z_values);
-      }
-      else {
-        // EEPROM data is stale
-        mbl.reset();
-        for (uint8_t q = 0; q < mesh_num_x * mesh_num_y; q++) EEPROM_READ(dummy);
-      }
-    #else
-      // MBL is disabled - skip the stored data
-      for (uint8_t q = 0; q < mesh_num_x * mesh_num_y; q++) EEPROM_READ(dummy);
-    #endif // MESH_BED_LEVELING
-
-    #if !HAS_BED_PROBE
-      float zprobe_zoffset = 0;
-    #endif
-    EEPROM_READ(zprobe_zoffset);
-
-    #if ENABLED(DELTA)
-      EEPROM_READ(endstop_adj);                // 3 floats
-      EEPROM_READ(delta_radius);               // 1 float
-      EEPROM_READ(delta_diagonal_rod);         // 1 float
-      EEPROM_READ(delta_segments_per_second);  // 1 float
-      EEPROM_READ(delta_diagonal_rod_trim_tower_1);  // 1 float
-      EEPROM_READ(delta_diagonal_rod_trim_tower_2);  // 1 float
-      EEPROM_READ(delta_diagonal_rod_trim_tower_3);  // 1 float
-    #elif ENABLED(Z_DUAL_ENDSTOPS)
-      EEPROM_READ(z_endstop_adj);
-      dummy = 0.0f;
-      for (uint8_t q=8; q--;) EEPROM_READ(dummy);
-    #else
-      dummy = 0.0f;
-      for (uint8_t q=9; q--;) EEPROM_READ(dummy);
-    #endif
-
-    #if DISABLED(ULTIPANEL)
-      int preheatHotendTemp1, preheatBedTemp1, preheatFanSpeed1,
-          preheatHotendTemp2, preheatBedTemp2, preheatFanSpeed2;
-    #endif
-
-    EEPROM_READ(preheatHotendTemp1);
-    EEPROM_READ(preheatBedTemp1);
-    EEPROM_READ(preheatFanSpeed1);
-    EEPROM_READ(preheatHotendTemp2);
-    EEPROM_READ(preheatBedTemp2);
-    EEPROM_READ(preheatFanSpeed2);
-
+    EEPROM_READ(preheatMacerador);
+    EEPROM_READ(preheatLicor);
     #if ENABLED(PIDTEMP)
       for (uint8_t e = 0; e < MAX_EXTRUDERS; e++) {
         EEPROM_READ(dummy); // Kp
@@ -522,32 +403,10 @@ void Config_ResetDefault() {
   #if HAS_BED_PROBE
     zprobe_zoffset = Z_PROBE_OFFSET_FROM_EXTRUDER;
   #endif
-
-  #if ENABLED(DELTA)
-    endstop_adj[X_AXIS] = endstop_adj[Y_AXIS] = endstop_adj[Z_AXIS] = 0;
-    delta_radius =  DELTA_RADIUS;
-    delta_diagonal_rod =  DELTA_DIAGONAL_ROD;
-    delta_segments_per_second =  DELTA_SEGMENTS_PER_SECOND;
-    delta_diagonal_rod_trim_tower_1 = DELTA_DIAGONAL_ROD_TRIM_TOWER_1;
-    delta_diagonal_rod_trim_tower_2 = DELTA_DIAGONAL_ROD_TRIM_TOWER_2;
-    delta_diagonal_rod_trim_tower_3 = DELTA_DIAGONAL_ROD_TRIM_TOWER_3;
-  #elif ENABLED(Z_DUAL_ENDSTOPS)
-    z_endstop_adj = 0;
-  #endif
-
   #if ENABLED(ULTIPANEL)
-    preheatHotendTemp1 = PREHEAT_1_TEMP_HOTEND;
-    preheatBedTemp1 = PREHEAT_1_TEMP_BED;
-    preheatFanSpeed1 = PREHEAT_1_FAN_SPEED;
-    preheatHotendTemp2 = PREHEAT_2_TEMP_HOTEND;
-    preheatBedTemp2 = PREHEAT_2_TEMP_BED;
-    preheatFanSpeed2 = PREHEAT_2_FAN_SPEED;
+    preheatMacerador = PREHEAT_1_TEMP_HOTEND;
+    preheatLicor = PREHEAT_1_TEMP_BED;
   #endif
-
-  #if HAS_LCD_CONTRAST
-    lcd_contrast = DEFAULT_LCD_CONTRAST;
-  #endif
-
   #if ENABLED(PIDTEMP)
     #if ENABLED(PID_PARAMS_PER_HOTEND) && HOTENDS > 1
       HOTEND_LOOP()
