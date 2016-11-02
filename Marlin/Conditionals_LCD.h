@@ -107,8 +107,7 @@
   #if ENABLED(ULTIMAKERCONTROLLER)              \
    || ENABLED(REPRAP_DISCOUNT_SMART_CONTROLLER) \
    || ENABLED(G3D_PANEL)                        \
-   || ENABLED(RIGIDBOT_PANEL)                   \
-   || ENABLED(REPRAPWORLD_KEYPAD)
+   || ENABLED(RIGIDBOT_PANEL)
     #define ULTIPANEL
     #define NEWPANEL
   #endif

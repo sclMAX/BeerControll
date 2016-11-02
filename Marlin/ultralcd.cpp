@@ -12,18 +12,10 @@ int preheatHotendTemp1, preheatBedTemp1, preheatFanSpeed1,
     preheatMacerador, preheatLicor;
 uint8_t lcd_status_message_level;
 char lcd_status_message[3 * (LCD_WIDTH) + 1] = WELCOME_MSG; // worst case is kana with up to 3*LCD_WIDTH+1
-
-#if ENABLED(DOGLCD)
-  #include "ultralcd_impl_DOGM.h"
-#else
-  #include "ultralcd_impl_HD44780.h"
-#endif
-
+#include "ultralcd_impl_DOGM.h"
 // The main status screen
 static void lcd_status_screen();
-
 millis_t next_lcd_update_ms;
-
 uint8_t lcdDrawUpdate = LCDVIEW_CLEAR_CALL_REDRAW; // Set when the LCD needs to draw, decrements after every draw. Set to 2 in LCD routines so the LCD gets at least 1 full redraw (first redraw is partial)
 
 #if ENABLED(ULTIPANEL)
@@ -259,10 +251,6 @@ uint8_t lcdDrawUpdate = LCDVIEW_CLEAR_CALL_REDRAW; // Set when the LCD needs to 
 
   /** Used variables to keep track of the menu */
   volatile uint8_t buttons;  //the last checked buttons in a bit array.
-  #if ENABLED(REPRAPWORLD_KEYPAD)
-    volatile uint8_t buttons_reprapworld_keypad; // to store the keypad shift register values
-  #endif
-
   #if ENABLED(LCD_HAS_SLOW_BUTTONS)
     volatile uint8_t slow_buttons; // Bits of the pressed buttons.
   #endif
@@ -421,15 +409,33 @@ void kill_screen(const char* lcd_msg) {
     thermalManager.disable_all_heaters();
     lcd_return_to_status();
   }
+   // SubMenu Procesos
+  static void lcd_prosesos_menu() {
+    START_MENU();
+    MENU_ITEM(back, MSG_BACK);
+    //ALGO AQUI
+    END_MENU();
+  }// SubMenu Procesos
+
+  //Iniciar Procesos
+  static void lcd_iniciar_prosesos_menu() {
+   
+    //CODIGO PARA INCIAR PROCESOS
+    lcd_return_to_status();
+  }// Iniciar Procesos
+
   // MENU PRICNICPAL
   static void lcd_main_menu() {
     START_MENU();
     MENU_ITEM(back, MSG_BACK);
+    //Precalentar
     MENU_ITEM(submenu, MSG_PREPARE, lcd_prepare_menu);
-    MENU_ITEM(submenu, "PROCESO", lcd_prepare_menu);
-    MENU_ITEM(submenu, MSG_CONTROL, lcd_control_menu);
-    // MENU ENFRIAR
+    //Procesos
+    MENU_ITEM(function, "Iniciar " MSG_PROCESS, lcd_iniciar_prosesos_menu);
+    //Apagar Quemadores
     MENU_ITEM(function, MSG_COOLDOWN, lcd_cooldown);
+    //Ajustes
+    MENU_ITEM(submenu, MSG_CONTROL, lcd_control_menu);    
     END_MENU();
   }// MENU PRICNICPAL
 
@@ -476,100 +482,6 @@ void kill_screen(const char* lcd_msg) {
 
   /**
    *
-   * "Tune" submenu
-   *
-   */
-  static void lcd_tune_menu() {
-    START_MENU();
-
-    //
-    // ^ Main
-    //
-    MENU_ITEM(back, MSG_MAIN);
-
-    //
-    // Speed:
-    //
-    MENU_ITEM_EDIT(int3, MSG_SPEED, &feedrate_percentage, 10, 999);
-    //
-    // Nozzle:
-    // Nozzle [1-4]:
-    //
-    #if HOTENDS == 1
-      #if TEMP_SENSOR_0 != 0
-        MENU_MULTIPLIER_ITEM_EDIT_CALLBACK(int3, MSG_NOZZLE, &thermalManager.target_temperature[0], 0, HEATER_0_MAXTEMP - 15, watch_temp_callback_E0);
-      #endif
-    #else //HOTENDS > 1
-      #if TEMP_SENSOR_0 != 0
-        MENU_MULTIPLIER_ITEM_EDIT_CALLBACK(int3, MSG_NOZZLE MSG_N1, &thermalManager.target_temperature[0], 0, HEATER_0_MAXTEMP - 15, watch_temp_callback_E0);
-      #endif
-      #if TEMP_SENSOR_1 != 0
-        MENU_MULTIPLIER_ITEM_EDIT_CALLBACK(int3, MSG_NOZZLE MSG_N2, &thermalManager.target_temperature[1], 0, HEATER_1_MAXTEMP - 15, watch_temp_callback_E1);
-      #endif
-      #if HOTENDS > 2
-        #if TEMP_SENSOR_2 != 0
-          MENU_MULTIPLIER_ITEM_EDIT_CALLBACK(int3, MSG_NOZZLE MSG_N3, &thermalManager.target_temperature[2], 0, HEATER_2_MAXTEMP - 15, watch_temp_callback_E2);
-        #endif
-        #if HOTENDS > 3
-          #if TEMP_SENSOR_3 != 0
-            MENU_MULTIPLIER_ITEM_EDIT_CALLBACK(int3, MSG_NOZZLE MSG_N4, &thermalManager.target_temperature[3], 0, HEATER_3_MAXTEMP - 15, watch_temp_callback_E3);
-          #endif
-        #endif // HOTENDS > 3
-      #endif // HOTENDS > 2
-    #endif // HOTENDS > 1
-
-    //
-    // Bed:
-    //
-    #if TEMP_SENSOR_BED != 0
-      MENU_MULTIPLIER_ITEM_EDIT_CALLBACK(int3, MSG_BED, &thermalManager.target_temperature_bed, 0, BED_MAXTEMP - 15, watch_temp_callback_bed);
-    #endif
-
-    //
-    // Fan Speed:
-    //
-    #if FAN_COUNT > 0
-      #if HAS_FAN0
-        #if FAN_COUNT > 1
-          #define MSG_1ST_FAN_SPEED MSG_FAN_SPEED " 1"
-        #else
-          #define MSG_1ST_FAN_SPEED MSG_FAN_SPEED
-        #endif
-        MENU_MULTIPLIER_ITEM_EDIT(int3, MSG_1ST_FAN_SPEED, &fanSpeeds[0], 0, 255);
-      #endif
-      #if HAS_FAN1
-        MENU_MULTIPLIER_ITEM_EDIT(int3, MSG_FAN_SPEED " 2", &fanSpeeds[1], 0, 255);
-      #endif
-      #if HAS_FAN2
-        MENU_MULTIPLIER_ITEM_EDIT(int3, MSG_FAN_SPEED " 3", &fanSpeeds[2], 0, 255);
-      #endif
-    #endif // FAN_COUNT > 0
-
-    //
-    // Flow:
-    // Flow 1:
-    // Flow 2:
-    // Flow 3:
-    // Flow 4:
-    //
-    #if EXTRUDERS == 1
-      MENU_ITEM_EDIT(int3, MSG_FLOW, &extruder_multiplier[0], 10, 999);
-    #else // EXTRUDERS > 1
-      MENU_ITEM_EDIT(int3, MSG_FLOW, &extruder_multiplier[active_extruder], 10, 999);
-      MENU_ITEM_EDIT(int3, MSG_FLOW MSG_N1, &extruder_multiplier[0], 10, 999);
-      MENU_ITEM_EDIT(int3, MSG_FLOW MSG_N2, &extruder_multiplier[1], 10, 999);
-      #if EXTRUDERS > 2
-        MENU_ITEM_EDIT(int3, MSG_FLOW MSG_N3, &extruder_multiplier[2], 10, 999);
-        #if EXTRUDERS > 3
-          MENU_ITEM_EDIT(int3, MSG_FLOW MSG_N4, &extruder_multiplier[3], 10, 999);
-        #endif //EXTRUDERS > 3
-      #endif //EXTRUDERS > 2
-    #endif //EXTRUDERS > 1
-    END_MENU();
-  }
-
-  /**
-   *
    * "Prepare" submenu items
    *
    */
@@ -582,18 +494,6 @@ void kill_screen(const char* lcd_msg) {
   void lcd_preheat_macerador(){ _lcd_preheat(0, preheatMacerador, 0, preheatFanSpeed1); }
   void lcd_preheat_licor(){ _lcd_preheat(0, 0, preheatLicor, preheatFanSpeed1); }
   void lcd_preheat_all(){ _lcd_preheat(0, preheatMacerador, preheatLicor, preheatFanSpeed1); }
-  
-  static void lcd_prepare_submenu_config() {
-    START_MENU();
-    MENU_ITEM(back, MSG_BACK);
-    MENU_ITEM_EDIT(int3, MSG_NOZZLE, &preheatMacerador, HEATER_0_MINTEMP, HEATER_0_MAXTEMP - 15);
-    MENU_ITEM_EDIT(int3, MSG_BED, &preheatLicor, BED_MINTEMP,BED_MAXTEMP - 15);
-    #if ENABLED(EEPROM_SETTINGS)
-      MENU_ITEM(function, MSG_STORE_EPROM, Config_StoreSettings);
-      MENU_ITEM(function, MSG_LOAD_EPROM, Config_RetrieveSettings);
-    #endif
-    END_MENU();
-  }
   /**
    *
    * "Prepare" submenu
@@ -603,13 +503,12 @@ void kill_screen(const char* lcd_msg) {
   static void lcd_prepare_menu() {
     START_MENU();
     MENU_ITEM(back, MSG_BACK);
-    MENU_ITEM(function, "TODO", lcd_preheat_all);
+    MENU_ITEM(function, MSG_ALL, lcd_preheat_all);
     MENU_ITEM(function, MSG_PREHEAT_1, lcd_preheat_macerador);
     MENU_ITEM(function, MSG_BED, lcd_preheat_licor);
-    MENU_ITEM(submenu,MSG_CONTROL, lcd_prepare_submenu_config);
     END_MENU();
   }// MENU PRECALENTAR
-  float move_menu_scale;
+
 
   /**
    *
@@ -619,8 +518,9 @@ void kill_screen(const char* lcd_msg) {
 
   static void lcd_control_menu() {
     START_MENU();
-    MENU_ITEM(back, MSG_MAIN);
+    MENU_ITEM(back, MSG_BACK);
     MENU_ITEM(submenu, MSG_TEMPERATURE, lcd_control_temperature_menu);
+    MENU_ITEM(submenu, MSG_PROCESS, lcd_prosesos_menu);
     #if ENABLED(EEPROM_SETTINGS)
       MENU_ITEM(function, MSG_STORE_EPROM, Config_StoreSettings);
       MENU_ITEM(function, MSG_LOAD_EPROM, Config_RetrieveSettings);
@@ -714,39 +614,9 @@ void kill_screen(const char* lcd_msg) {
    */
   static void lcd_control_temperature_menu() {
     START_MENU();
-    MENU_ITEM(back, MSG_CONTROL);
-    // Nozzle:
-    // Nozzle [1-4]:
-    #if HOTENDS == 1
-      #if TEMP_SENSOR_0 != 0
-        MENU_MULTIPLIER_ITEM_EDIT_CALLBACK(int3, MSG_NOZZLE, &thermalManager.target_temperature[0], 0, HEATER_0_MAXTEMP - 15, watch_temp_callback_E0);
-      #endif
-    #else //HOTENDS > 1
-      #if TEMP_SENSOR_0 != 0
-        MENU_MULTIPLIER_ITEM_EDIT_CALLBACK(int3, MSG_NOZZLE MSG_N1, &thermalManager.target_temperature[0], 0, HEATER_0_MAXTEMP - 15, watch_temp_callback_E0);
-      #endif
-      #if TEMP_SENSOR_1 != 0
-        MENU_MULTIPLIER_ITEM_EDIT_CALLBACK(int3, MSG_NOZZLE MSG_N2, &thermalManager.target_temperature[1], 0, HEATER_1_MAXTEMP - 15, watch_temp_callback_E1);
-      #endif
-      #if HOTENDS > 2
-        #if TEMP_SENSOR_2 != 0
-          MENU_MULTIPLIER_ITEM_EDIT_CALLBACK(int3, MSG_NOZZLE MSG_N3, &thermalManager.target_temperature[2], 0, HEATER_2_MAXTEMP - 15, watch_temp_callback_E2);
-        #endif
-        #if HOTENDS > 3
-          #if TEMP_SENSOR_3 != 0
-            MENU_MULTIPLIER_ITEM_EDIT_CALLBACK(int3, MSG_NOZZLE MSG_N4, &thermalManager.target_temperature[3], 0, HEATER_3_MAXTEMP - 15, watch_temp_callback_E3);
-          #endif
-        #endif // HOTENDS > 3
-      #endif // HOTENDS > 2
-    #endif // HOTENDS > 1
-
-    //
-    // Bed:
-    //
-    #if TEMP_SENSOR_BED != 0
-      MENU_MULTIPLIER_ITEM_EDIT(int3, MSG_BED, &thermalManager.target_temperature_bed, 0, BED_MAXTEMP - 15);
-    #endif
-    //
+    MENU_ITEM(back, MSG_BACK);   
+    MENU_ITEM_EDIT(int3, MSG_NOZZLE, &preheatMacerador, HEATER_0_MINTEMP, HEATER_0_MAXTEMP - 15);
+    MENU_ITEM_EDIT(int3, MSG_BED, &preheatLicor, BED_MINTEMP,BED_MAXTEMP - 15);
     // Autotemp, Min, Max, Fact
     //
     #if ENABLED(AUTOTEMP) && (TEMP_SENSOR_0 != 0)
@@ -755,7 +625,6 @@ void kill_screen(const char* lcd_msg) {
       MENU_ITEM_EDIT(float3, MSG_MAX, &planner.autotemp_max, 0, HEATER_0_MAXTEMP - 15);
       MENU_ITEM_EDIT(float32, MSG_FACTOR, &planner.autotemp_factor, 0.0, 1.0);
     #endif
-
     //
     // PID-P, PID-I, PID-D, PID-C, PID Autotune
     // PID-P E1, PID-I E1, PID-D E1, PID-C E1, PID Autotune E1
@@ -800,112 +669,12 @@ void kill_screen(const char* lcd_msg) {
       #else //!PID_PARAMS_PER_HOTEND || HOTENDS == 1
         PID_MENU_ITEMS("", 0);
       #endif //!PID_PARAMS_PER_HOTEND || HOTENDS == 1
-
     #endif //PIDTEMP
-
-    //
-    // Preheat PLA conf
-    //
-    MENU_ITEM(submenu, MSG_PREHEAT_1_SETTINGS, lcd_control_temperature_preheat_pla_settings_menu);
-
-    //
-    // Preheat ABS conf
-    //
-    MENU_ITEM(submenu, MSG_PREHEAT_2_SETTINGS, lcd_control_temperature_preheat_abs_settings_menu);
-    END_MENU();
-  }
-
-  /**
-   *
-   * "Temperature" > "Preheat PLA conf" submenu
-   *
-   */
-  static void lcd_control_temperature_preheat_pla_settings_menu() {
-    START_MENU();
-    MENU_ITEM(back, MSG_TEMPERATURE);
-    MENU_ITEM_EDIT(int3, MSG_FAN_SPEED, &preheatFanSpeed1, 0, 255);
-    #if TEMP_SENSOR_0 != 0
-      MENU_ITEM_EDIT(int3, MSG_NOZZLE, &preheatHotendTemp1, HEATER_0_MINTEMP, HEATER_0_MAXTEMP - 15);
-    #endif
-    #if TEMP_SENSOR_BED != 0
-      MENU_ITEM_EDIT(int3, MSG_BED, &preheatBedTemp1, BED_MINTEMP, BED_MAXTEMP - 15);
-    #endif
-    #if ENABLED(EEPROM_SETTINGS)
-      MENU_ITEM(function, MSG_STORE_EPROM, Config_StoreSettings);
-    #endif
-    END_MENU();
-  }
-
-  /**
-   *
-   * "Temperature" > "Preheat ABS conf" submenu
-   *
-   */
-  static void lcd_control_temperature_preheat_abs_settings_menu() {
-    START_MENU();
-    MENU_ITEM(back, MSG_TEMPERATURE);
-    MENU_ITEM_EDIT(int3, MSG_FAN_SPEED, &preheatFanSpeed2, 0, 255);
-    #if TEMP_SENSOR_0 != 0
-      MENU_ITEM_EDIT(int3, MSG_NOZZLE, &preheatHotendTemp2, HEATER_0_MINTEMP, HEATER_0_MAXTEMP - 15);
-    #endif
-    #if TEMP_SENSOR_BED != 0
-      MENU_ITEM_EDIT(int3, MSG_BED, &preheatBedTemp2, BED_MINTEMP, BED_MAXTEMP - 15);
-    #endif
-    #if ENABLED(EEPROM_SETTINGS)
-      MENU_ITEM(function, MSG_STORE_EPROM, Config_StoreSettings);
-    #endif
     END_MENU();
   }
 
   static void _reset_acceleration_rates() { planner.reset_acceleration_rates(); }
   static void _planner_refresh_positioning() { planner.refresh_positioning(); }
-
-  /**
-   *
-   * "Control" > "Motion" submenu
-   *
-   */
-  static void lcd_control_motion_menu() {
-    START_MENU();
-    MENU_ITEM(back, MSG_CONTROL);
-    #if HAS_BED_PROBE
-      MENU_ITEM_EDIT(float32, MSG_ZPROBE_ZOFFSET, &zprobe_zoffset, Z_PROBE_OFFSET_RANGE_MIN, Z_PROBE_OFFSET_RANGE_MAX);
-    #endif
-    MENU_ITEM_EDIT(float5, MSG_ACC, &planner.acceleration, 10, 99000);
-    MENU_ITEM_EDIT(float3, MSG_VXY_JERK, &planner.max_xy_jerk, 1, 990);
-    #if ENABLED(DELTA)
-      MENU_ITEM_EDIT(float3, MSG_VZ_JERK, &planner.max_z_jerk, 1, 990);
-    #else
-      MENU_ITEM_EDIT(float52, MSG_VZ_JERK, &planner.max_z_jerk, 0.1, 990);
-    #endif
-    MENU_ITEM_EDIT(float3, MSG_VE_JERK, &planner.max_e_jerk, 1, 990);
-    MENU_ITEM_EDIT(float3, MSG_VMAX MSG_X, &planner.max_feedrate_mm_s[X_AXIS], 1, 999);
-    MENU_ITEM_EDIT(float3, MSG_VMAX MSG_Y, &planner.max_feedrate_mm_s[Y_AXIS], 1, 999);
-    MENU_ITEM_EDIT(float3, MSG_VMAX MSG_Z, &planner.max_feedrate_mm_s[Z_AXIS], 1, 999);
-    MENU_ITEM_EDIT(float3, MSG_VMAX MSG_E, &planner.max_feedrate_mm_s[E_AXIS], 1, 999);
-    MENU_ITEM_EDIT(float3, MSG_VMIN, &planner.min_feedrate_mm_s, 0, 999);
-    MENU_ITEM_EDIT(float3, MSG_VTRAV_MIN, &planner.min_travel_feedrate_mm_s, 0, 999);
-    MENU_ITEM_EDIT_CALLBACK(long5, MSG_AMAX MSG_X, &planner.max_acceleration_mm_per_s2[X_AXIS], 100, 99000, _reset_acceleration_rates);
-    MENU_ITEM_EDIT_CALLBACK(long5, MSG_AMAX MSG_Y, &planner.max_acceleration_mm_per_s2[Y_AXIS], 100, 99000, _reset_acceleration_rates);
-    MENU_ITEM_EDIT_CALLBACK(long5, MSG_AMAX MSG_Z, &planner.max_acceleration_mm_per_s2[Z_AXIS], 10, 99000, _reset_acceleration_rates);
-    MENU_ITEM_EDIT_CALLBACK(long5, MSG_AMAX MSG_E, &planner.max_acceleration_mm_per_s2[E_AXIS], 100, 99000, _reset_acceleration_rates);
-    MENU_ITEM_EDIT(float5, MSG_A_RETRACT, &planner.retract_acceleration, 100, 99000);
-    MENU_ITEM_EDIT(float5, MSG_A_TRAVEL, &planner.travel_acceleration, 100, 99000);
-    MENU_ITEM_EDIT_CALLBACK(float52, MSG_XSTEPS, &planner.axis_steps_per_mm[X_AXIS], 5, 9999, _planner_refresh_positioning);
-    MENU_ITEM_EDIT_CALLBACK(float52, MSG_YSTEPS, &planner.axis_steps_per_mm[Y_AXIS], 5, 9999, _planner_refresh_positioning);
-    #if ENABLED(DELTA)
-      MENU_ITEM_EDIT_CALLBACK(float52, MSG_ZSTEPS, &planner.axis_steps_per_mm[Z_AXIS], 5, 9999, _planner_refresh_positioning);
-    #else
-      MENU_ITEM_EDIT_CALLBACK(float51, MSG_ZSTEPS, &planner.axis_steps_per_mm[Z_AXIS], 5, 9999, _planner_refresh_positioning);
-    #endif
-    MENU_ITEM_EDIT_CALLBACK(float51, MSG_ESTEPS, &planner.axis_steps_per_mm[E_AXIS], 5, 9999, _planner_refresh_positioning);
-    #if ENABLED(ABORT_ON_ENDSTOP_HIT_FEATURE_ENABLED)
-      MENU_ITEM_EDIT(bool, MSG_ENDSTOP_ABORT, &stepper.abort_on_endstop_hit);
-    #endif
-    END_MENU();
-  }
-
-
   /**
    *
    * Functions for editing single values
@@ -980,31 +749,6 @@ void kill_screen(const char* lcd_msg) {
 
   /**
    *
-   * Handlers for RepRap World Keypad input
-   *
-   */
-  #if ENABLED(REPRAPWORLD_KEYPAD)
-    static void _reprapworld_keypad_move(AxisEnum axis, int dir) {
-      move_menu_scale = REPRAPWORLD_KEYPAD_MOVE_STEP;
-      encoderPosition = dir;
-      switch (axis) {
-        case X_AXIS: lcd_move_x(); break;
-        case Y_AXIS: lcd_move_y(); break;
-        case Z_AXIS: lcd_move_z();
-      }
-    }
-    static void reprapworld_keypad_move_z_up()    { _reprapworld_keypad_move(Z_AXIS,  1); }
-    static void reprapworld_keypad_move_z_down()  { _reprapworld_keypad_move(Z_AXIS, -1); }
-    static void reprapworld_keypad_move_x_left()  { _reprapworld_keypad_move(X_AXIS, -1); }
-    static void reprapworld_keypad_move_x_right() { _reprapworld_keypad_move(X_AXIS,  1); }
-    static void reprapworld_keypad_move_y_up()    { _reprapworld_keypad_move(Y_AXIS, -1); }
-    static void reprapworld_keypad_move_y_down()  { _reprapworld_keypad_move(Y_AXIS,  1); }
-    static void reprapworld_keypad_move_home()    { enqueue_and_echo_commands_P(PSTR("G28")); } // move all axes home and wait
-    static void reprapworld_keypad_move_menu()    { lcd_goto_screen(lcd_move_menu); }
-  #endif // REPRAPWORLD_KEYPAD
-
-  /**
-   *
    * Audio feedback for controller clicks
    *
    */
@@ -1066,15 +810,6 @@ void lcd_init() {
       SET_INPUT(BTN_ENC);
       WRITE(BTN_ENC, HIGH);
     #endif
-
-    #if ENABLED(REPRAPWORLD_KEYPAD)
-      pinMode(SHIFT_CLK, OUTPUT);
-      pinMode(SHIFT_LD, OUTPUT);
-      pinMode(SHIFT_OUT, INPUT);
-      WRITE(SHIFT_OUT, HIGH);
-      WRITE(SHIFT_LD, HIGH);
-    #endif
-
     #if BUTTON_EXISTS(UP)
       SET_INPUT(BTN_UP);
     #endif
@@ -1206,39 +941,6 @@ void lcd_update() {
     #endif
 
     #if ENABLED(ULTIPANEL)
-
-      #if ENABLED(REPRAPWORLD_KEYPAD)
-
-        static uint8_t keypad_debounce = 0;
-
-        if (!REPRAPWORLD_KEYPAD_PRESSED) {
-          if (keypad_debounce > 0) keypad_debounce--;
-        }
-        else if (!keypad_debounce) {
-          keypad_debounce = 2;
-
-          if (REPRAPWORLD_KEYPAD_MOVE_MENU)       reprapworld_keypad_move_menu();
-
-          #if DISABLED(DELTA) && Z_HOME_DIR == -1
-            if (REPRAPWORLD_KEYPAD_MOVE_Z_UP)     reprapworld_keypad_move_z_up();
-          #endif
-
-          if (axis_homed[X_AXIS] && axis_homed[Y_AXIS] && axis_homed[Z_AXIS]) {
-            #if ENABLED(DELTA) || Z_HOME_DIR != -1
-              if (REPRAPWORLD_KEYPAD_MOVE_Z_UP)   reprapworld_keypad_move_z_up();
-            #endif
-            if (REPRAPWORLD_KEYPAD_MOVE_Z_DOWN)   reprapworld_keypad_move_z_down();
-            if (REPRAPWORLD_KEYPAD_MOVE_X_LEFT)   reprapworld_keypad_move_x_left();
-            if (REPRAPWORLD_KEYPAD_MOVE_X_RIGHT)  reprapworld_keypad_move_x_right();
-            if (REPRAPWORLD_KEYPAD_MOVE_Y_DOWN)   reprapworld_keypad_move_y_down();
-            if (REPRAPWORLD_KEYPAD_MOVE_Y_UP)     reprapworld_keypad_move_y_up();
-          }
-          else {
-            if (REPRAPWORLD_KEYPAD_MOVE_HOME)     reprapworld_keypad_move_home();
-          }
-        }
-      #endif // REPRAPWORLD_KEYPAD
-
       bool encoderPastThreshold = (abs(encoderDiff) >= ENCODER_PULSES_PER_STEP);
       if (encoderPastThreshold || LCD_CLICKED) {
         if (encoderPastThreshold) {
@@ -1484,9 +1186,6 @@ void lcd_reset_alert_level() { lcd_status_message_level = 0; }
       buttons = newbutton;
       #if ENABLED(LCD_HAS_SLOW_BUTTONS)
         buttons |= slow_buttons;
-      #endif
-      #if ENABLED(REPRAPWORLD_KEYPAD)
-        GET_BUTTON_STATES(buttons_reprapworld_keypad);
       #endif
     #else
       GET_BUTTON_STATES(buttons);

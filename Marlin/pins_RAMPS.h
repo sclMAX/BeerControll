@@ -307,14 +307,7 @@
       #define BEEPER_PIN 33
 
       // buttons are directly attached using AUX-2
-      #if ENABLED(REPRAPWORLD_KEYPAD)
-        #define BTN_EN1 64 // encoder
-        #define BTN_EN2 59 // encoder
-        #define BTN_ENC 63 // enter button
-        #define SHIFT_OUT 40 // shift register
-        #define SHIFT_CLK 44 // shift register
-        #define SHIFT_LD 42 // shift register
-      #elif ENABLED(PANEL_ONE)
+      #if ENABLED(PANEL_ONE)
         #define BTN_EN1 59 // AUX2 PIN 3
         #define BTN_EN2 63 // AUX2 PIN 4
         #define BTN_ENC 49 // AUX3 PIN 7
@@ -335,10 +328,5 @@
   #endif // NEWPANEL
 
 #endif // ULTRA_LCD
+#define MAX6675_SS       66 // Do not use pin 53 if there is even the remote possibility of using Display/SD card
 
-// SPI for Max6675 or Max31855 Thermocouple
-#if DISABLED(SDSUPPORT)
-  #define MAX6675_SS       66 // Do not use pin 53 if there is even the remote possibility of using Display/SD card
-#else
-  #define MAX6675_SS       66 // Do not use pin 49 as this is tied to the switch inside the SD card socket to detect if there is an SD card present
-#endif
