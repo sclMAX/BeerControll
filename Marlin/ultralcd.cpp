@@ -6,11 +6,14 @@
 #include "temperature.h"
 #include "stepper.h"
 #include "configuration_store.h"
+#include <LinkedList.h>
+#include "Etapa.h"
 
 int preheatHotendTemp1, preheatBedTemp1, preheatFanSpeed1,
     preheatHotendTemp2, preheatBedTemp2, preheatFanSpeed2,
     preheatMacerador, preheatLicor;
 uint8_t lcd_status_message_level;
+static LinkedList<Etapa*> Etapas = LinkedList<Etapa*>();
 char lcd_status_message[3 * (LCD_WIDTH) + 1] = WELCOME_MSG; // worst case is kana with up to 3*LCD_WIDTH+1
 #include "ultralcd_impl_DOGM.h"
 // The main status screen
@@ -409,33 +412,43 @@ void kill_screen(const char* lcd_msg) {
     thermalManager.disable_all_heaters();
     lcd_return_to_status();
   }
+  //Agregar Etapa
+  static void lcd_add_etapa(int index){
+    Etapa *newEtapa = new Etapa();
+    START_MENU();
+    MENU_ITEM_EDIT(int3, "Minuto inicio", &newEtapa->inicio, index, 300);
+    MENU_ITEM_EDIT(int3, "Duracion (Minutos)", &newEtapa->duracion, 1, 300);
+    MENU_ITEM_EDIT(bool, "Mod. Macerador", &newEtapa->manejaMacerador);
+    MENU_ITEM_EDIT(int3, "Temp. Macerador",  &newEtapa->tempMacerador, HEATER_0_MINTEMP, HEATER_0_MAXTEMP - 15);
+    MENU_ITEM_EDIT(bool, "Mod. Licor", &newEtapa->manejaLicor);
+    MENU_ITEM_EDIT(int3, "Temp. Licor", &newEtapa->tempLicor, BED_MINTEMP,BED_MAXTEMP - 15);
+    MENU_ITEM_EDIT(bool, "Recircular", &newEtapa->manejaMacerador);
+    MENU_ITEM_EDIT(bool, "Alarma fin", &newEtapa->manejaMacerador);
+    MENU_ITEM(back, MSG_BACK);
+    END_MENU();
+  }
    // SubMenu Procesos
   static void lcd_prosesos_menu() {
+    int i = 100;
     START_MENU();
     MENU_ITEM(back, MSG_BACK);
-    //ALGO AQUI
-    END_MENU();
-  }// SubMenu Procesos
 
+   // MENU_ITEM(submenu, MSG_ADD_ETAPA, lcd_add_etapa );
+    END_MENU();
+  }
   //Iniciar Procesos
   static void lcd_iniciar_prosesos_menu() {
-   
-    //CODIGO PARA INCIAR PROCESOS
+     //CODIGO PARA INCIAR PROCESOS
     lcd_return_to_status();
-  }// Iniciar Procesos
-
+  }
   // MENU PRICNICPAL
   static void lcd_main_menu() {
     START_MENU();
     MENU_ITEM(back, MSG_BACK);
-    //Precalentar
-    MENU_ITEM(submenu, MSG_PREPARE, lcd_prepare_menu);
-    //Procesos
-    MENU_ITEM(function, "Iniciar " MSG_PROCESS, lcd_iniciar_prosesos_menu);
-    //Apagar Quemadores
-    MENU_ITEM(function, MSG_COOLDOWN, lcd_cooldown);
-    //Ajustes
-    MENU_ITEM(submenu, MSG_CONTROL, lcd_control_menu);    
+    MENU_ITEM(submenu, MSG_PREPARE, lcd_prepare_menu);//Precalentar
+    MENU_ITEM(function, "Iniciar " MSG_PROCESS, lcd_iniciar_prosesos_menu);//Procesos    
+    MENU_ITEM(function, MSG_COOLDOWN, lcd_cooldown);//Apagar Quemadores   
+    MENU_ITEM(submenu, MSG_CONTROL, lcd_control_menu);//Ajustes 
     END_MENU();
   }// MENU PRICNICPAL
 
