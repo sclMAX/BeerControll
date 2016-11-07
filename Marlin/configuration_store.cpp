@@ -201,6 +201,16 @@ void Config_StoreSettings()  {
 
   EEPROM_WRITE(preheatMacerador);
   EEPROM_WRITE(preheatLicor);
+  for(int idx = 0; idx < etapas; idx++){
+    EEPROM_WRITE(MaceradorTemp[idx]);
+    EEPROM_WRITE(LicorTemp[idx]);
+    EEPROM_WRITE(Inicio[idx]);
+    EEPROM_WRITE(Duracion[idx]);
+  }
+  EEPROM_WRITE(E1Recircula);
+  EEPROM_WRITE(E2Recircula);
+  EEPROM_WRITE(E3Recircula);
+  EEPROM_WRITE(E4Recircula);
   for (uint8_t e = 0; e < MAX_EXTRUDERS; e++) {
     #if ENABLED(PIDTEMP)
       if (e < HOTENDS) {
@@ -238,12 +248,10 @@ void Config_StoreSettings()  {
     EEPROM_WRITE(thermalManager.bedKi);
     EEPROM_WRITE(thermalManager.bedKd);
   #endif
-
   #if !HAS_LCD_CONTRAST
     const int lcd_contrast = 32;
   #endif
   EEPROM_WRITE(lcd_contrast);
-
   #if ENABLED(SCARA)
     EEPROM_WRITE(axis_scaling); // 3 floats
   #else
@@ -290,6 +298,16 @@ void Config_RetrieveSettings() {
     eeprom_checksum = 0; // clear before reading first "real data"
     EEPROM_READ(preheatMacerador);
     EEPROM_READ(preheatLicor);
+    for(int idx = 0; idx < etapas; idx++){
+      EEPROM_READ(MaceradorTemp[idx]);
+      EEPROM_READ(LicorTemp[idx]);
+      EEPROM_READ(Inicio[idx]);
+      EEPROM_READ(Duracion[idx]);
+    }
+    EEPROM_READ(E1Recircula);
+    EEPROM_READ(E2Recircula);
+    EEPROM_READ(E3Recircula);
+    EEPROM_READ(E4Recircula);
     #if ENABLED(PIDTEMP)
       for (uint8_t e = 0; e < MAX_EXTRUDERS; e++) {
         EEPROM_READ(dummy); // Kp

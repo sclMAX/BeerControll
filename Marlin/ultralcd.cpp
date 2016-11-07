@@ -6,14 +6,22 @@
 #include "temperature.h"
 #include "stepper.h"
 #include "configuration_store.h"
-#include <LinkedList.h>
-#include "Etapa.h"
 
 int preheatHotendTemp1, preheatBedTemp1, preheatFanSpeed1,
     preheatHotendTemp2, preheatBedTemp2, preheatFanSpeed2,
     preheatMacerador, preheatLicor;
+const int etapas = 4;
+int MaceradorTemp [etapas] = {60,65,71,75};
+int LicorTemp     [etapas] = {65,70,75,78};
+int Inicio        [etapas] = {0,30,60,90}; 
+int Duracion      [etapas] = {30,30,30,30};
+bool E1Recircula = false;
+bool E2Recircula = false;
+bool E3Recircula = false;
+bool E4Recircula = false;
+
 uint8_t lcd_status_message_level;
-static LinkedList<Etapa*> Etapas = LinkedList<Etapa*>();
+
 char lcd_status_message[3 * (LCD_WIDTH) + 1] = WELCOME_MSG; // worst case is kana with up to 3*LCD_WIDTH+1
 #include "ultralcd_impl_DOGM.h"
 // The main status screen
@@ -412,28 +420,62 @@ void kill_screen(const char* lcd_msg) {
     thermalManager.disable_all_heaters();
     lcd_return_to_status();
   }
-  //Agregar Etapa
-  static void lcd_add_etapa(int index){
-    Etapa *newEtapa = new Etapa();
-    START_MENU();
-    MENU_ITEM_EDIT(int3, "Minuto inicio", &newEtapa->inicio, index, 300);
-    MENU_ITEM_EDIT(int3, "Duracion (Minutos)", &newEtapa->duracion, 1, 300);
-    MENU_ITEM_EDIT(bool, "Mod. Macerador", &newEtapa->manejaMacerador);
-    MENU_ITEM_EDIT(int3, "Temp. Macerador",  &newEtapa->tempMacerador, HEATER_0_MINTEMP, HEATER_0_MAXTEMP - 15);
-    MENU_ITEM_EDIT(bool, "Mod. Licor", &newEtapa->manejaLicor);
-    MENU_ITEM_EDIT(int3, "Temp. Licor", &newEtapa->tempLicor, BED_MINTEMP,BED_MAXTEMP - 15);
-    MENU_ITEM_EDIT(bool, "Recircular", &newEtapa->manejaMacerador);
-    MENU_ITEM_EDIT(bool, "Alarma fin", &newEtapa->manejaMacerador);
-    MENU_ITEM(back, MSG_BACK);
-    END_MENU();
-  }
-   // SubMenu Procesos
+ //Ajustes->Procesos->Etapa1
+ static void lcd_procesos_etapa1(){
+   int index = 0;
+   START_MENU();
+   MENU_ITEM(back, MSG_BACK);
+   MENU_ITEM_EDIT(int3, MSG_INICIO, &Inicio[index], 0, 300);
+   MENU_ITEM_EDIT(int3, MSG_DURACION, &Duracion[index], 1, 300);
+   MENU_ITEM_EDIT(int3, MSG_TEMPMACERADOR, &MaceradorTemp[index], HEATER_0_MINTEMP, HEATER_0_MAXTEMP - 15);
+   MENU_ITEM_EDIT(int3, MSG_TEMPLICOR, &LicorTemp[index], BED_MINTEMP, BED_MAXTEMP - 15);
+   MENU_ITEM_EDIT(bool, MSG_RECIRCULA, &E1Recircula);
+   END_MENU();
+ }
+ //Ajustes->Procesos->Etapa2
+ static void lcd_procesos_etapa2(){
+   int index = 1;
+   START_MENU();
+   MENU_ITEM(back, MSG_BACK);
+   MENU_ITEM_EDIT(int3, MSG_INICIO, &Inicio[index], 0, 300);
+   MENU_ITEM_EDIT(int3, MSG_DURACION, &Duracion[index], 1, 300);
+   MENU_ITEM_EDIT(int3, MSG_TEMPMACERADOR, &MaceradorTemp[index], HEATER_0_MINTEMP, HEATER_0_MAXTEMP - 15);
+   MENU_ITEM_EDIT(int3, MSG_TEMPLICOR, &LicorTemp[index], BED_MINTEMP, BED_MAXTEMP - 15);
+   MENU_ITEM_EDIT(bool, MSG_RECIRCULA, &E2Recircula);
+   END_MENU();
+ }
+ //Ajustes->Procesos->Etapa3
+ static void lcd_procesos_etapa3(){
+   int index = 2;
+   START_MENU();
+   MENU_ITEM(back, MSG_BACK);
+   MENU_ITEM_EDIT(int3, MSG_INICIO, &Inicio[index], 0, 300);
+   MENU_ITEM_EDIT(int3, MSG_DURACION, &Duracion[index], 1, 300);
+   MENU_ITEM_EDIT(int3, MSG_TEMPMACERADOR, &MaceradorTemp[index], HEATER_0_MINTEMP, HEATER_0_MAXTEMP - 15);
+   MENU_ITEM_EDIT(int3, MSG_TEMPLICOR, &LicorTemp[index], BED_MINTEMP, BED_MAXTEMP - 15);
+   MENU_ITEM_EDIT(bool, MSG_RECIRCULA, &E3Recircula);
+   END_MENU();
+ }
+ //Ajustes->Procesos->Etapa4
+ static void lcd_procesos_etapa4(){
+   int index = 3;
+   START_MENU();
+   MENU_ITEM(back, MSG_BACK);
+   MENU_ITEM_EDIT(int3, MSG_INICIO, &Inicio[index], 0, 300);
+   MENU_ITEM_EDIT(int3, MSG_DURACION, &Duracion[index], 1, 300);
+   MENU_ITEM_EDIT(int3, MSG_TEMPMACERADOR, &MaceradorTemp[index], HEATER_0_MINTEMP, HEATER_0_MAXTEMP - 15);
+   MENU_ITEM_EDIT(int3, MSG_TEMPLICOR, &LicorTemp[index], BED_MINTEMP, BED_MAXTEMP - 15);
+   MENU_ITEM_EDIT(bool,  MSG_RECIRCULA, &E4Recircula);
+   END_MENU();
+ }
+ //Ajustes->Procesos
   static void lcd_prosesos_menu() {
-    int i = 100;
     START_MENU();
     MENU_ITEM(back, MSG_BACK);
-
-   // MENU_ITEM(submenu, MSG_ADD_ETAPA, lcd_add_etapa );
+    MENU_ITEM(submenu, MSG_ETAPA1, lcd_procesos_etapa1);
+    MENU_ITEM(submenu, MSG_ETAPA2, lcd_procesos_etapa2);
+    MENU_ITEM(submenu, MSG_ETAPA3, lcd_procesos_etapa3);
+    MENU_ITEM(submenu, MSG_ETAPA4, lcd_procesos_etapa4);
     END_MENU();
   }
   //Iniciar Procesos
