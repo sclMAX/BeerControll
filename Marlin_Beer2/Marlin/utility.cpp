@@ -20,27 +20,15 @@
  *
  */
 
-/**
- * blinkm.cpp - Library for controlling a BlinkM over i2c
- * Created by Tim Koster, August 21 2013.
- */
-
 #include "Marlin.h"
+#include "utility.h"
+#include "temperature.h"
 
-#if ENABLED(BLINKM)
-
-#include "blinkm.h"
-
-void SendColors(byte red, byte grn, byte blu) {
-  Wire.begin();
-  Wire.beginTransmission(0x09);
-  Wire.write('o');                    //to disable ongoing script, only needs to be used once
-  Wire.write('n');
-  Wire.write(red);
-  Wire.write(grn);
-  Wire.write(blu);
-  Wire.endTransmission();
+void safe_delay(millis_t ms) {
+  while (ms > 50) {
+    ms -= 50;
+    delay(50);
+    thermalManager.manage_heater();
+  }
+  delay(ms);
 }
-
-#endif //BLINKM
-

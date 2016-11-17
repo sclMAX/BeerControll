@@ -20,12 +20,17 @@
  *
  */
 
-/**
- * blinkm.h - Library for controlling a BlinkM over i2c
- * Created by Tim Koster, August 21 2013.
- */
+#ifndef WATCHDOG_H
+#define WATCHDOG_H
 
-#include "Arduino.h"
-#include "Wire.h"
+#include "Marlin.h"
+#include <avr/wdt.h>
 
-void SendColors(byte red, byte grn, byte blu);
+// Initialize watchdog with a 4 second interrupt time
+void watchdog_init();
+
+// Reset watchdog. MUST be called at least every 4 seconds after the
+// first watchdog_init or AVR will go into emergency procedures.
+inline void watchdog_reset() { wdt_reset(); }
+
+#endif

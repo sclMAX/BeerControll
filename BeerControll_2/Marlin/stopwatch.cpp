@@ -93,14 +93,3 @@ millis_t Stopwatch::duration() {
           - this->startTimestamp) / 1000UL + this->accumulator;
 }
 
-#if ENABLED(DEBUG_STOPWATCH)
-
-  void Stopwatch::debug(const char func[]) {
-    if (DEBUGGING(INFO)) {
-      SERIAL_ECHOPGM("Stopwatch::");
-      serialprintPGM(func);
-      SERIAL_ECHOLNPGM("()");
-    }
-  }
-
-#endif

@@ -26,15 +26,8 @@
 
 #ifndef TEMPERATURE_H
 #define TEMPERATURE_H
-
-#include "planner.h"
 #include "thermistortables.h"
-
 #include "MarlinConfig.h"
-
-#if ENABLED(PID_EXTRUSION_SCALING)
-  #include "stepper.h"
-#endif
 
 #ifndef SOFT_PWM_SCALE
   #define SOFT_PWM_SCALE 0
@@ -67,10 +60,6 @@ class Temperature {
 
     static unsigned char soft_pwm_bed;
 
-    #if ENABLED(FAN_SOFT_PWM)
-      static unsigned char fanSpeedSoftPwm[FAN_COUNT];
-    #endif
-
     #if ENABLED(PIDTEMP) || ENABLED(PIDTEMPBED)
       #define PID_dT ((OVERSAMPLENR * 12.0)/(F_CPU / 64.0 / 256.0))
     #endif
@@ -80,17 +69,11 @@ class Temperature {
       #if ENABLED(PID_PARAMS_PER_HOTEND) && HOTENDS > 1
 
         static float Kp[HOTENDS], Ki[HOTENDS], Kd[HOTENDS];
-        #if ENABLED(PID_EXTRUSION_SCALING)
-          static float Kc[HOTENDS];
-        #endif
         #define PID_PARAM(param, h) Temperature::param[h]
 
       #else
 
         static float Kp, Ki, Kd;
-        #if ENABLED(PID_EXTRUSION_SCALING)
-          static float Kc;
-        #endif
         #define PID_PARAM(param, h) Temperature::param
 
       #endif // PID_PARAMS_PER_HOTEND
@@ -146,13 +129,6 @@ class Temperature {
                    iTerm[HOTENDS],
                    dTerm[HOTENDS];
 
-      #if ENABLED(PID_EXTRUSION_SCALING)
-        static float cTerm[HOTENDS];
-        static long last_e_position;
-        static long lpq[LPQ_MAX_LEN];
-        static int lpq_ptr;
-      #endif
-
       static float pid_error[HOTENDS],
                    temp_iState_min[HOTENDS],
                    temp_iState_max[HOTENDS];
@@ -197,23 +173,7 @@ class Temperature {
       static int bed_maxttemp_raw;
     #endif
 
-    #if ENABLED(FILAMENT_WIDTH_SENSOR)
-      static int meas_shift_index;  // Index of a delayed sample in buffer
-    #endif
-
-    #if HAS_AUTO_FAN
-      static millis_t next_auto_fan_check_ms;
-    #endif
-
     static unsigned char soft_pwm[HOTENDS];
-
-    #if ENABLED(FAN_SOFT_PWM)
-      static unsigned char soft_pwm_fan[FAN_COUNT];
-    #endif
-
-    #if ENABLED(FILAMENT_WIDTH_SENSOR)
-      static int current_raw_filwidth;  //Holds measured filament diameter - one extruder only
-    #endif
 
   public:
 
@@ -266,12 +226,6 @@ class Temperature {
     #else
       #define is_preheating(n) (false)
     #endif
-
-    #if ENABLED(FILAMENT_WIDTH_SENSOR)
-      static float analog2widthFil(); // Convert raw Filament Width to millimeters
-      static int widthFil_to_size_ratio(); // Convert raw Filament Width to an extrusion ratio
-    #endif
-
 
     //high level conversion routines, for use outside of temperature.cpp
     //inline so that there is no performance decrease.
@@ -371,27 +325,11 @@ class Temperature {
      * Update the temp manager when PID values change
      */
     static void updatePID();
-
-    static void autotempShutdown() {
-      #if ENABLED(AUTOTEMP)
-        if (planner.autotemp_enabled) {
-          planner.autotemp_enabled = false;
-          if (degTargetHotend(EXTRUDER_IDX) > planner.autotemp_min)
-            setTargetHotend(0, EXTRUDER_IDX);
-        }
-      #endif
-    }
-
   private:
 
     static void set_current_temp_raw();
 
     static void updateTemperaturesFromRawValues();
-
-    #if ENABLED(HEATER_0_USES_MAX6675)
-      static int read_max6675();
-    #endif
-
     static void checkExtruderAutoFans();
 
     static float get_pid_output(int e);

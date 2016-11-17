@@ -2,9 +2,7 @@
 #if ENABLED(ULTRA_LCD)
 #include "Marlin.h"
 #include "language.h"
-#include "cardreader.h"
 #include "temperature.h"
-#include "stepper.h"
 #include "configuration_store.h"
 
 int preheatHotendTemp1, preheatBedTemp1, preheatFanSpeed1,
@@ -187,10 +185,10 @@ uint8_t lcdDrawUpdate = LCDVIEW_CLEAR_CALL_REDRAW; // Set when the LCD needs to 
    *     lcd_implementation_drawmenu_function(sel, row, PSTR(MSG_PAUSE_PRINT), lcd_sdcard_pause)
    *     menu_action_function(lcd_sdcard_pause)
    *
-   *   MENU_ITEM_EDIT(int3, MSG_SPEED, &feedrate_percentage, 10, 999)
-   *   MENU_ITEM(setting_edit_int3, MSG_SPEED, PSTR(MSG_SPEED), &feedrate_percentage, 10, 999)
-   *     lcd_implementation_drawmenu_setting_edit_int3(sel, row, PSTR(MSG_SPEED), PSTR(MSG_SPEED), &feedrate_percentage, 10, 999)
-   *     menu_action_setting_edit_int3(PSTR(MSG_SPEED), &feedrate_percentage, 10, 999)
+   *   MENU_ITEM_EDIT(int3, MSG_SPEED, &variable, 10, 999)
+   *   MENU_ITEM(setting_edit_int3, MSG_SPEED, PSTR(MSG_SPEED), &variable, 10, 999)
+   *     lcd_implementation_drawmenu_setting_edit_int3(sel, row, PSTR(MSG_SPEED), PSTR(MSG_SPEED), &variable, 10, 999)
+   *     menu_action_setting_edit_int3(PSTR(MSG_SPEED), &variable, 10, 999)
    *
    */
   #define _MENU_ITEM_PART_1(TYPE, LABEL, ARGS...) \
@@ -368,29 +366,7 @@ static void lcd_status_screen() {
   if (current_click) {
     lcd_goto_screen(lcd_main_menu, true);
     lcd_implementation_init();
-  }
-  int new_frm = feedrate_percentage + (int32_t)encoderPosition;
-  // Dead zone at 100% feedrate
-  if ((feedrate_percentage < 100 && new_frm > 100) || (feedrate_percentage > 100 && new_frm < 100)) {
-    feedrate_percentage = 100;
-    encoderPosition = 0;
-  }
-  else if (feedrate_percentage == 100) {
-    if ((int32_t)encoderPosition > ENCODER_FEEDRATE_DEADZONE) {
-      feedrate_percentage += (int32_t)encoderPosition - (ENCODER_FEEDRATE_DEADZONE);
-      encoderPosition = 0;
-    }
-    else if ((int32_t)encoderPosition < -(ENCODER_FEEDRATE_DEADZONE)) {
-      feedrate_percentage += (int32_t)encoderPosition + ENCODER_FEEDRATE_DEADZONE;
-      encoderPosition = 0;
-    }
-  }
-  else {
-    feedrate_percentage = new_frm;
-    encoderPosition = 0;
-  }
-  feedrate_percentage = constrain(feedrate_percentage, 10, 999);
-  
+  }  
 }
 
 /**
@@ -412,9 +388,6 @@ void kill_screen(const char* lcd_msg) {
 }
 
 #if ENABLED(ULTIPANEL)
-  inline void line_to_current(AxisEnum axis) {
-    planner.buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], MMM_TO_MMS(manual_feedrate_mm_m[axis]), active_extruder);
-  }
    //ENFRIAR FUNCION
   static void lcd_cooldown() {
     thermalManager.disable_all_heaters();
@@ -604,9 +577,7 @@ void kill_screen(const char* lcd_msg) {
     static void _lcd_autotune(int e) {
       char cmd[30];
       sprintf_P(cmd, PSTR("M303 U1 E%i S%i"), e,
-        #if HAS_PID_FOR_BOTH
-          e < 0 ? autotune_temp_bed : autotune_temp[e]
-        #elif ENABLED(PIDTEMPBED)
+        #if ENABLED(PIDTEMPBED)
           autotune_temp_bed
         #else
           autotune_temp[e]
@@ -695,14 +666,7 @@ void kill_screen(const char* lcd_msg) {
         MENU_ITEM_EDIT(float52, MSG_PID_P ELABEL, &PID_PARAM(Kp, eindex), 1, 9990); \
         MENU_ITEM_EDIT_CALLBACK(float52, MSG_PID_I ELABEL, &raw_Ki, 0.01, 9990, copy_and_scalePID_i_E ## eindex); \
         MENU_ITEM_EDIT_CALLBACK(float52, MSG_PID_D ELABEL, &raw_Kd, 1, 9990, copy_and_scalePID_d_E ## eindex)
-
-      #if ENABLED(PID_EXTRUSION_SCALING)
-        #define _PID_MENU_ITEMS(ELABEL, eindex) \
-          _PID_BASE_MENU_ITEMS(ELABEL, eindex); \
-          MENU_ITEM_EDIT(float3, MSG_PID_C ELABEL, &PID_PARAM(Kc, eindex), 1, 9990)
-      #else
         #define _PID_MENU_ITEMS(ELABEL, eindex) _PID_BASE_MENU_ITEMS(ELABEL, eindex)
-      #endif
 
       #if ENABLED(PID_AUTOTUNE_MENU)
         #define PID_MENU_ITEMS(ELABEL, eindex) \
@@ -727,9 +691,6 @@ void kill_screen(const char* lcd_msg) {
     #endif //PIDTEMP
     END_MENU();
   }
-
-  static void _reset_acceleration_rates() { planner.reset_acceleration_rates(); }
-  static void _planner_refresh_positioning() { planner.refresh_positioning(); }
   /**
    *
    * Functions for editing single values
@@ -746,15 +707,15 @@ void kill_screen(const char* lcd_msg) {
    *   static void menu_action_setting_edit_callback_int3(const char* pstr, int* ptr, int minValue, int maxValue, screenFunc_t callback); // edit int with callback
    *
    * You can then use one of the menu macros to present the edit interface:
-   *   MENU_ITEM_EDIT(int3, MSG_SPEED, &feedrate_percentage, 10, 999)
+   *   MENU_ITEM_EDIT(int3, MSG_SPEED, &variable, 10, 999)
    *
    * This expands into a more primitive menu item:
-   *   MENU_ITEM(setting_edit_int3, MSG_SPEED, PSTR(MSG_SPEED), &feedrate_percentage, 10, 999)
+   *   MENU_ITEM(setting_edit_int3, MSG_SPEED, PSTR(MSG_SPEED), &variable, 10, 999)
    *
    *
    * Also: MENU_MULTIPLIER_ITEM_EDIT, MENU_ITEM_EDIT_CALLBACK, and MENU_MULTIPLIER_ITEM_EDIT_CALLBACK
    *
-   *       menu_action_setting_edit_int3(PSTR(MSG_SPEED), &feedrate_percentage, 10, 999)
+   *       menu_action_setting_edit_int3(PSTR(MSG_SPEED), &variable, 10, 999)
    */
   #define menu_edit_type(_type, _name, _strFunc, scale) \
     bool _menu_edit_ ## _name () { \
@@ -835,7 +796,6 @@ void kill_screen(const char* lcd_msg) {
    */
   static void menu_action_back() { lcd_goto_previous_menu(); }
   static void menu_action_submenu(screenFunc_t func) { lcd_save_previous_menu(); lcd_goto_screen(func); }
-  static void menu_action_gcode(const char* pgcode) { enqueue_and_echo_commands_P(pgcode); }
   static void menu_action_function(screenFunc_t func) { (*func)(); }
   static void menu_action_setting_edit_bool(const char* pstr, bool* ptr) {UNUSED(pstr); *ptr = !(*ptr); }
   static void menu_action_setting_edit_callback_bool(const char* pstr, bool* ptr, screenFunc_t callback) {
@@ -1013,15 +973,6 @@ void lcd_update() {
 
                 if (encoderStepRate >= ENCODER_100X_STEPS_PER_SEC)     encoderMultiplier = 100;
                 else if (encoderStepRate >= ENCODER_10X_STEPS_PER_SEC) encoderMultiplier = 10;
-
-                #if ENABLED(ENCODER_RATE_MULTIPLIER_DEBUG)
-                  SERIAL_ECHO_START;
-                  SERIAL_ECHOPAIR("Enc Step Rate: ", encoderStepRate);
-                  SERIAL_ECHOPAIR("  Multiplier: ", encoderMultiplier);
-                  SERIAL_ECHOPAIR("  ENCODER_10X_STEPS_PER_SEC: ", ENCODER_10X_STEPS_PER_SEC);
-                  SERIAL_ECHOPAIR("  ENCODER_100X_STEPS_PER_SEC: ", ENCODER_100X_STEPS_PER_SEC);
-                  SERIAL_EOL;
-                #endif //ENCODER_RATE_MULTIPLIER_DEBUG
               }
 
               lastEncoderMovementMillis = ms;

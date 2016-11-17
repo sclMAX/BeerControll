@@ -37,19 +37,9 @@
 #define FONT_STATUSMENU_NAME FONT_MENU_NAME
 #include "dogm_font_data_Marlin_symbols.h"   // The Marlin special symbols
 #define FONT_SPECIAL_NAME Marlin_symbols
-#if DISPLAY_CHARSET_HD44780 == JAPANESE
-  #include "dogm_font_data_HD44780_J.h"
-  #define FONT_MENU_NAME HD44780_J_5x7
-#elif DISPLAY_CHARSET_HD44780 == WESTERN
-  #include "dogm_font_data_HD44780_W.h"
-  #define FONT_MENU_NAME HD44780_W_5x7
-#elif DISPLAY_CHARSET_HD44780 == CYRILLIC
-  #include "dogm_font_data_HD44780_C.h"
-  #define FONT_MENU_NAME HD44780_C_5x7
-#else // fall-back
-  #include "dogm_font_data_ISO10646_1.h"
-  #define FONT_MENU_NAME ISO10646_1_5x7
-#endif
+#include "dogm_font_data_HD44780_J.h"
+#define FONT_MENU_NAME HD44780_J_5x7
+
 
 //#define FONT_STATUSMENU_NAME FONT_MENU_NAME
 
@@ -287,22 +277,6 @@ FORCE_INLINE void _draw_heater_status(int x, int heater) {
   }
 }
 
-FORCE_INLINE void _draw_axis_label(AxisEnum axis, const char *pstr, bool blink) {
-  if (blink)
-    lcd_printPGM(pstr);
-  else {
-    if (!axis_homed[axis])
-      lcd_printPGM(PSTR("?"));
-    else {
-      #if DISABLED(DISABLE_REDUCED_ACCURACY_WARNING)
-        if (!axis_known_position[axis])
-          lcd_printPGM(PSTR(" "));
-        else
-      #endif
-      lcd_printPGM(pstr);
-    }
-  }
-}
 //  DRAW OLLA 
 static void drawOlla(u8g_uint_t x, u8g_uint_t y, char etiqueta){
   u8g_uint_t ollaAlto = 20;
