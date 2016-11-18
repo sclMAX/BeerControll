@@ -85,10 +85,6 @@
     #error "The maximum number of EXTRUDERS in Marlin is 4."
   #endif
 
-  #if ENABLED(TEMP_SENSOR_1_AS_REDUNDANT)
-    #error "EXTRUDERS must be 1 with TEMP_SENSOR_1_AS_REDUNDANT."
-  #endif
-
   #if ENABLED(HEATERS_PARALLEL)
     #error "EXTRUDERS must be 1 with HEATERS_PARALLEL."
   #endif
@@ -137,13 +133,6 @@
  */
 #if DISABLED(DOGLCD) && ENABLED(ULTRA_LCD) && !defined(DISPLAY_CHARSET_HD44780)
   #error "You must set DISPLAY_CHARSET_HD44780 to JAPANESE, WESTERN or CYRILLIC for your LCD controller."
-#endif
-
-/**
- * Bed Heating Options - PID vs Limit Switching
- */
-#if ENABLED(PIDTEMPBED) && ENABLED(BED_LIMIT_SWITCHING)
-  #error "To use BED_LIMIT_SWITCHING you must disable PIDTEMPBED."
 #endif
 
 /**
@@ -339,16 +328,12 @@
   #elif TEMP_SENSOR_3 != 0
     #error "TEMP_SENSOR_3 shouldn't be set with only 2 extruders."
   #endif
-#elif TEMP_SENSOR_1 != 0 && DISABLED(TEMP_SENSOR_1_AS_REDUNDANT)
+#elif TEMP_SENSOR_1 != 0 
   #error "TEMP_SENSOR_1 shouldn't be set with only 1 extruder."
 #elif TEMP_SENSOR_2 != 0
   #error "TEMP_SENSOR_2 shouldn't be set with only 1 extruder."
 #elif TEMP_SENSOR_3 != 0
   #error "TEMP_SENSOR_3 shouldn't be set with only 1 extruder."
-#endif
-
-#if ENABLED(TEMP_SENSOR_1_AS_REDUNDANT) && TEMP_SENSOR_1 == 0
-  #error "TEMP_SENSOR_1 is required with TEMP_SENSOR_1_AS_REDUNDANT."
 #endif
 
 /**
@@ -380,10 +365,8 @@
  */
 #if WATCH_TEMP_PERIOD > 500
   #error "WATCH_TEMP_PERIOD now uses seconds instead of milliseconds."
-#elif DISABLED(THERMAL_PROTECTION_HOTENDS) && (defined(WATCH_TEMP_PERIOD) || defined(THERMAL_PROTECTION_PERIOD))
-  #error "Thermal Runaway Protection for hotends is now enabled with THERMAL_PROTECTION_HOTENDS."
-#elif DISABLED(THERMAL_PROTECTION_BED) && defined(THERMAL_PROTECTION_BED_PERIOD)
-  #error "Thermal Runaway Protection for the bed is now enabled with THERMAL_PROTECTION_BED."
+#elif (defined(WATCH_TEMP_PERIOD) || defined(THERMAL_PROTECTION_PERIOD))
+  #error "Thermal Runaway Protection for hotends is now enabled with."
 #elif ENABLED(COREXZ) && ENABLED(Z_LATE_ENABLE)
   #error "Z_LATE_ENABLE can't be used with COREXZ."
 #elif defined(X_HOME_RETRACT_MM)
