@@ -37,19 +37,9 @@
 #define FONT_STATUSMENU_NAME FONT_MENU_NAME
 #include "dogm_font_data_Marlin_symbols.h"   // The Marlin special symbols
 #define FONT_SPECIAL_NAME Marlin_symbols
-#if DISPLAY_CHARSET_HD44780 == JAPANESE
-  #include "dogm_font_data_HD44780_J.h"
-  #define FONT_MENU_NAME HD44780_J_5x7
-#elif DISPLAY_CHARSET_HD44780 == WESTERN
-  #include "dogm_font_data_HD44780_W.h"
-  #define FONT_MENU_NAME HD44780_W_5x7
-#elif DISPLAY_CHARSET_HD44780 == CYRILLIC
-  #include "dogm_font_data_HD44780_C.h"
-  #define FONT_MENU_NAME HD44780_C_5x7
-#else // fall-back
-  #include "dogm_font_data_ISO10646_1.h"
-  #define FONT_MENU_NAME ISO10646_1_5x7
-#endif
+#include "dogm_font_data_HD44780_J.h"
+#define FONT_MENU_NAME HD44780_J_5x7
+
 
 //#define FONT_STATUSMENU_NAME FONT_MENU_NAME
 
@@ -80,34 +70,9 @@
 #define START_COL              0
 
 // LCD selection
-#if ENABLED(REPRAPWORLD_GRAPHICAL_LCD)
-  U8GLIB_ST7920_128X64_4X u8g(LCD_PINS_RS);
-#elif ENABLED(U8GLIB_ST7920)
+#if ENABLED(U8GLIB_ST7920)
   //U8GLIB_ST7920_128X64_RRD u8g(0,0,0);
   U8GLIB_ST7920_128X64_RRD u8g(0);
-#elif ENABLED(CARTESIO_UI)
-  // The CartesioUI display
-  #if DOGLCD_MOSI != -1 && DOGLCD_SCK != -1
-    // using SW-SPI
-    U8GLIB_DOGM128 u8g(DOGLCD_SCK, DOGLCD_MOSI, DOGLCD_CS, DOGLCD_A0);
-  #else
-    U8GLIB_DOGM128 u8g(DOGLCD_CS, DOGLCD_A0);
-  #endif
-#elif ENABLED(U8GLIB_LM6059_AF)
-  // Based on the Adafruit ST7565 (http://www.adafruit.com/products/250)
-  U8GLIB_LM6059 u8g(DOGLCD_CS, DOGLCD_A0);
-#elif ENABLED(MAKRPANEL) || ENABLED(VIKI2) || ENABLED(miniVIKI)
-  // The MaKrPanel, Mini Viki, and Viki 2.0, ST7565 controller as well
-  U8GLIB_NHD_C12864 u8g(DOGLCD_CS, DOGLCD_A0);
-#elif ENABLED(U8GLIB_SSD1306)
-  // Generic support for SSD1306 OLED I2C LCDs
-  U8GLIB_SSD1306_128X64 u8g(U8G_I2C_OPT_NONE | U8G_I2C_OPT_FAST);
-#elif ENABLED(U8GLIB_SH1106)
-  // Generic support for SH1106 OLED I2C LCDs
-  U8GLIB_SH1106_128X64 u8g(U8G_I2C_OPT_NONE | U8G_I2C_OPT_FAST);
-#elif ENABLED(MINIPANEL)
-  // The MINIPanel display
-  U8GLIB_MINI12864 u8g(DOGLCD_CS, DOGLCD_A0);
 #else
   // for regular DOGM128 display with HW-SPI
   U8GLIB_DOGM128 u8g(DOGLCD_CS, DOGLCD_A0);  // HW-SPI Com: CS, A0

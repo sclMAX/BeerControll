@@ -418,23 +418,6 @@
 #endif
 
 /**
- * SAV_3DGLCD display options
- */
-#if ENABLED(U8GLIB_SSD1306) && ENABLED(U8GLIB_SH1106)
-  #error "Only enable one SAV_3DGLCD display type: U8GLIB_SSD1306 or U8GLIB_SH1106."
-#endif
-
-/**
- * Don't set more than one kinematic type
- */
-#if (ENABLED(DELTA) && (ENABLED(SCARA) || ENABLED(COREXY) || ENABLED(COREXZ) || ENABLED(COREYZ))) \
- || (ENABLED(SCARA) && (ENABLED(COREXY) || ENABLED(COREXZ) || ENABLED(COREYZ))) \
- || (ENABLED(COREXY) && (ENABLED(COREXZ) || ENABLED(COREYZ))) \
- || (ENABLED(COREXZ) && ENABLED(COREYZ))
-  #error "Please enable only one of DELTA, SCARA, COREXY, COREXZ, or COREYZ."
-#endif
-
-/**
  * Allen Key
  * Deploying the Allen Key probe uses big moves in z direction. Too dangerous for an unhomed z-axis.
  */
