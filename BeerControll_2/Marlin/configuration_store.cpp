@@ -108,14 +108,8 @@ void Config_StoreSettings()  {
       }
 
   } // Hotends Loop
-  #if DISABLED(PIDTEMPBED)
-    dummy = DUMMY_PID_VALUE;
-    for (uint8_t q = 3; q--;) EEPROM_WRITE(dummy);
-  #else
-    EEPROM_WRITE(thermalManager.bedKp);
-    EEPROM_WRITE(thermalManager.bedKi);
-    EEPROM_WRITE(thermalManager.bedKd);
-  #endif
+  dummy = DUMMY_PID_VALUE;
+  for (uint8_t q = 3; q--;) EEPROM_WRITE(dummy);
   #if !HAS_LCD_CONTRAST
     const int lcd_contrast = 32;
   #endif
@@ -174,17 +168,8 @@ void Config_RetrieveSettings() {
       // 4 x 4 = 16 slots for PID parameters
       for (uint8_t q = MAX_EXTRUDERS * 4; q--;) EEPROM_READ(dummy);  // Kp, Ki, Kd, Kc
     #endif // !PIDTEMP
-    #if ENABLED(PIDTEMPBED)
-      EEPROM_READ(dummy); // bedKp
-      if (dummy != DUMMY_PID_VALUE) {
-        thermalManager.bedKp = dummy;
-        EEPROM_READ(thermalManager.bedKi);
-        EEPROM_READ(thermalManager.bedKd);
-      }
-    #else
-      for (uint8_t q=3; q--;) EEPROM_READ(dummy); // bedKp, bedKi, bedKd
-    #endif
-
+    for (uint8_t q=3; q--;) EEPROM_READ(dummy); // bedKp, bedKi, bedKd
+ 
     #if !HAS_LCD_CONTRAST
       int lcd_contrast;
     #endif
@@ -221,12 +206,6 @@ void Config_ResetDefault() {
       PID_PARAM(Kd, e) = scalePID_d(DEFAULT_Kd);
     }
   #endif // PIDTEMP
-
-  #if ENABLED(PIDTEMPBED)
-    thermalManager.bedKp = DEFAULT_bedKp;
-    thermalManager.bedKi = scalePID_i(DEFAULT_bedKi);
-    thermalManager.bedKd = scalePID_d(DEFAULT_bedKd);
-  #endif
   Config_Postprocess();
 }
 

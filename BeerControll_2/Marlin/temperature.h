@@ -1,26 +1,4 @@
 /**
- * Marlin 3D Printer Firmware
- * Copyright (C) 2016 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
- *
- * Based on Sprinter and grbl.
- * Copyright (C) 2011 Camiel Gubbels / Erik van der Zalm
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- */
-
-/**
  * temperature.h - temperature controller
  */
 
@@ -53,19 +31,13 @@ class Temperature {
                  target_temperature[HOTENDS],
                  current_temperature_bed_raw,
                  target_temperature_bed;
-
-    #if ENABLED(TEMP_SENSOR_1_AS_REDUNDANT)
-      static float redundant_temperature;
-    #endif
-
     static unsigned char soft_pwm_bed;
 
-    #if ENABLED(PIDTEMP) || ENABLED(PIDTEMPBED)
+    #if ENABLED(PIDTEMP) 
       #define PID_dT ((OVERSAMPLENR * 12.0)/(F_CPU / 64.0 / 256.0))
     #endif
 
     #if ENABLED(PIDTEMP)
-
       #if ENABLED(PID_PARAMS_PER_HOTEND) && HOTENDS > 1
 
         static float Kp[HOTENDS], Ki[HOTENDS], Kd[HOTENDS];
@@ -85,40 +57,9 @@ class Temperature {
       #define unscalePID_d(d) ( (d) * PID_dT )
 
     #endif
-
-    #if ENABLED(PIDTEMPBED)
-      static float bedKp, bedKi, bedKd;
-    #endif
-
-    #if ENABLED(THERMAL_PROTECTION_HOTENDS) && WATCH_TEMP_PERIOD > 0
-      static int watch_target_temp[HOTENDS];
-      static millis_t watch_heater_next_ms[HOTENDS];
-    #endif
-
-    #if ENABLED(THERMAL_PROTECTION_BED) && WATCH_BED_TEMP_PERIOD > 0
-      static int watch_target_bed_temp;
-      static millis_t watch_bed_next_ms;
-    #endif
-
-    #if ENABLED(PREVENT_DANGEROUS_EXTRUDE)
-      static bool allow_cold_extrude;
-      static float extrude_min_temp;
-      static bool tooColdToExtrude(uint8_t e) {
-        #if HOTENDS == 1
-          UNUSED(e);
-        #endif
-        return allow_cold_extrude ? false : degHotend(HOTEND_INDEX) < extrude_min_temp;
-      }
-    #else
-      static bool tooColdToExtrude(uint8_t e) { UNUSED(e); return false; }
-    #endif
+    static bool tooColdToExtrude(uint8_t e) { UNUSED(e); return false; }
 
   private:
-
-    #if ENABLED(TEMP_SENSOR_1_AS_REDUNDANT)
-      static int redundant_temperature_raw;
-      static float redundant_temperature;
-    #endif
 
     static volatile bool temp_meas_ready;
 
@@ -134,19 +75,7 @@ class Temperature {
                    temp_iState_max[HOTENDS];
       static bool pid_reset[HOTENDS];
     #endif
-
-    #if ENABLED(PIDTEMPBED)
-      static float temp_iState_bed,
-                   temp_dState_bed,
-                   pTerm_bed,
-                   iTerm_bed,
-                   dTerm_bed,
-                   pid_error_bed,
-                   temp_iState_min_bed,
-                   temp_iState_max_bed;
-    #else
-      static millis_t next_bed_check_ms;
-    #endif
+    static millis_t next_bed_check_ms;
 
     static unsigned long raw_temp_value[4],
                          raw_temp_bed_value;
@@ -256,15 +185,6 @@ class Temperature {
       return target_temperature[HOTEND_INDEX];
     }
     static float degTargetBed() { return target_temperature_bed; }
-
-    #if ENABLED(THERMAL_PROTECTION_HOTENDS) && WATCH_TEMP_PERIOD > 0
-      static void start_watching_heater(uint8_t e = 0);
-    #endif
-
-    #if ENABLED(THERMAL_PROTECTION_BED) && WATCH_BED_TEMP_PERIOD > 0
-      static void start_watching_bed();
-    #endif
-
     static void setTargetHotend(const float& celsius, uint8_t e) {
       #if HOTENDS == 1
         UNUSED(e);
@@ -276,16 +196,10 @@ class Temperature {
           start_preheat_time(HOTEND_INDEX);
       #endif
       target_temperature[HOTEND_INDEX] = celsius;
-      #if ENABLED(THERMAL_PROTECTION_HOTENDS) && WATCH_TEMP_PERIOD > 0
-        start_watching_heater(HOTEND_INDEX);
-      #endif
     }
 
     static void setTargetBed(const float& celsius) {
       target_temperature_bed = celsius;
-      #if ENABLED(THERMAL_PROTECTION_BED) && WATCH_BED_TEMP_PERIOD > 0
-        start_watching_bed();
-      #endif
     }
 
     static bool isHeatingHotend(uint8_t e) {
@@ -313,14 +227,6 @@ class Temperature {
      * Switch off all heaters, set all target temperatures to 0
      */
     static void disable_all_heaters();
-
-    /**
-     * Perform auto-tuning for hotend or bed in response to M303
-     */
-    #if HAS_PID_HEATING
-      static void PID_autotune(float temp, int hotend, int ncycles, bool set_result=false);
-    #endif
-
     /**
      * Update the temp manager when PID values change
      */
@@ -328,38 +234,12 @@ class Temperature {
   private:
 
     static void set_current_temp_raw();
-
     static void updateTemperaturesFromRawValues();
     static void checkExtruderAutoFans();
-
     static float get_pid_output(int e);
-
-    #if ENABLED(PIDTEMPBED)
-      static float get_pid_output_bed();
-    #endif
-
     static void _temp_error(int e, const char* serial_msg, const char* lcd_msg);
     static void min_temp_error(uint8_t e);
     static void max_temp_error(uint8_t e);
-
-    #if ENABLED(THERMAL_PROTECTION_HOTENDS) || HAS_THERMALLY_PROTECTED_BED
-
-      typedef enum TRState { TRInactive, TRFirstHeating, TRStable, TRRunaway } TRstate;
-
-      static void thermal_runaway_protection(TRState* state, millis_t* timer, float temperature, float target_temperature, int heater_id, int period_seconds, int hysteresis_degc);
-
-      #if ENABLED(THERMAL_PROTECTION_HOTENDS)
-        static TRState thermal_runaway_state_machine[HOTENDS];
-        static millis_t thermal_runaway_timer[HOTENDS];
-      #endif
-
-      #if HAS_THERMALLY_PROTECTED_BED
-        static TRState thermal_runaway_bed_state_machine;
-        static millis_t thermal_runaway_bed_timer;
-      #endif
-
-    #endif // THERMAL_PROTECTION
-
 };
 
 extern Temperature thermalManager;
