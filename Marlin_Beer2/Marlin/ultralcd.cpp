@@ -494,47 +494,22 @@ void kill_screen(const char* lcd_msg) {
     END_MENU();
   }// MENU PRICNICPAL
 
-  /**
-   * Watch temperature callbacks
-   */
-  #if ENABLED(THERMAL_PROTECTION_HOTENDS) && WATCH_TEMP_PERIOD > 0
-    #if TEMP_SENSOR_0 != 0
-      void watch_temp_callback_E0() { thermalManager.start_watching_heater(0); }
-    #endif
-    #if HOTENDS > 1 && TEMP_SENSOR_1 != 0
-      void watch_temp_callback_E1() { thermalManager.start_watching_heater(1); }
-    #endif // HOTENDS > 1
-    #if HOTENDS > 2 && TEMP_SENSOR_2 != 0
-      void watch_temp_callback_E2() { thermalManager.start_watching_heater(2); }
-    #endif // HOTENDS > 2
-    #if HOTENDS > 3 && TEMP_SENSOR_3 != 0
-      void watch_temp_callback_E3() { thermalManager.start_watching_heater(3); }
-    #endif // HOTENDS > 3
-  #else
-    #if TEMP_SENSOR_0 != 0
-      void watch_temp_callback_E0() {}
-    #endif
-    #if HOTENDS > 1 && TEMP_SENSOR_1 != 0
-      void watch_temp_callback_E1() {}
-    #endif // HOTENDS > 1
-    #if HOTENDS > 2 && TEMP_SENSOR_2 != 0
-      void watch_temp_callback_E2() {}
-    #endif // HOTENDS > 2
-    #if HOTENDS > 3 && TEMP_SENSOR_3 != 0
-      void watch_temp_callback_E3() {}
-    #endif // HOTENDS > 3
+  #if TEMP_SENSOR_0 != 0
+    void watch_temp_callback_E0() {}
   #endif
-
-  #if ENABLED(THERMAL_PROTECTION_BED) && WATCH_BED_TEMP_PERIOD > 0
-    #if TEMP_SENSOR_BED != 0
-      void watch_temp_callback_bed() { thermalManager.start_watching_bed(); }
-    #endif
-  #else
-    #if TEMP_SENSOR_BED != 0
-      void watch_temp_callback_bed() {}
-    #endif
+  #if HOTENDS > 1 && TEMP_SENSOR_1 != 0
+    void watch_temp_callback_E1() {}
+  #endif // HOTENDS > 1
+  #if HOTENDS > 2 && TEMP_SENSOR_2 != 0
+    void watch_temp_callback_E2() {}
+  #endif // HOTENDS > 2
+  #if HOTENDS > 3 && TEMP_SENSOR_3 != 0
+    void watch_temp_callback_E3() {}
+  #endif // HOTENDS > 3
+  #if TEMP_SENSOR_BED != 0
+    void watch_temp_callback_bed() {}
   #endif
-
+  
   /**
    *
    * "Prepare" submenu items

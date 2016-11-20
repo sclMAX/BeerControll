@@ -354,14 +354,8 @@
     #define Z_MAX_PIN Z_STOP_PIN
   #endif
 #endif
-
-//
-// Disable unused endstop / probe pins
-//
-#if ENABLED(DISABLE_Z_MIN_PROBE_ENDSTOP) || DISABLED(Z_MIN_PROBE_ENDSTOP) // Allow code to compile regardless of Z_MIN_PROBE_ENDSTOP setting.
-  #undef Z_MIN_PROBE_PIN
-  #define Z_MIN_PROBE_PIN    -1
-#endif
+#undef Z_MIN_PROBE_PIN
+#define Z_MIN_PROBE_PIN    -1
 
 #if DISABLED(USE_XMAX_PLUG)
   #undef X_MAX_PIN
@@ -403,46 +397,8 @@
 
 #define __EPIN(p,q) E##p##_##q##_PIN
 #define _EPIN(p,q) __EPIN(p,q)
-
-// The X2 axis, if any, should be the next open extruder port
-#if ENABLED(DUAL_X_CARRIAGE) || ENABLED(X_DUAL_STEPPER_DRIVERS)
-  #ifndef X2_STEP_PIN
-    #define X2_STEP_PIN   _EPIN(E_STEPPERS, STEP)
-    #define X2_DIR_PIN    _EPIN(E_STEPPERS, DIR)
-    #define X2_ENABLE_PIN _EPIN(E_STEPPERS, ENABLE)
-  #endif
-  #undef _X2_PINS
-  #define _X2_PINS X2_STEP_PIN, X2_DIR_PIN, X2_ENABLE_PIN,
-  #define Y2_E_INDEX INCREMENT(E_STEPPERS)
-#else
-  #define Y2_E_INDEX E_STEPPERS
-#endif
-
-// The Y2 axis, if any, should be the next open extruder port
-#if ENABLED(Y_DUAL_STEPPER_DRIVERS)
-  #ifndef Y2_STEP_PIN
-    #define Y2_STEP_PIN   _EPIN(Y2_E_INDEX, STEP)
-    #define Y2_DIR_PIN    _EPIN(Y2_E_INDEX, DIR)
-    #define Y2_ENABLE_PIN _EPIN(Y2_E_INDEX, ENABLE)
-  #endif
-  #undef _Y2_PINS
-  #define _Y2_PINS Y2_STEP_PIN, Y2_DIR_PIN, Y2_ENABLE_PIN,
-  #define Z2_E_INDEX INCREMENT(Y2_E_INDEX)
-#else
-  #define Z2_E_INDEX Y2_E_INDEX
-#endif
-
-// The Z2 axis, if any, should be the next open extruder port
-#if ENABLED(Z_DUAL_STEPPER_DRIVERS)
-  #ifndef Z2_STEP_PIN
-    #define Z2_STEP_PIN   _EPIN(Z2_E_INDEX, STEP)
-    #define Z2_DIR_PIN    _EPIN(Z2_E_INDEX, DIR)
-    #define Z2_ENABLE_PIN _EPIN(Z2_E_INDEX, ENABLE)
-  #endif
-  #undef _Z2_PINS
-  #define _Z2_PINS Z2_STEP_PIN, Z2_DIR_PIN, Z2_ENABLE_PIN,
-#endif
-
+#define Y2_E_INDEX E_STEPPERS
+#define Z2_E_INDEX Y2_E_INDEX
 #define SENSITIVE_PINS { 0, 1, \
     X_STEP_PIN, X_DIR_PIN, X_ENABLE_PIN, X_MIN_PIN, X_MAX_PIN, \
     Y_STEP_PIN, Y_DIR_PIN, Y_ENABLE_PIN, Y_MIN_PIN, Y_MAX_PIN, \
@@ -453,8 +409,6 @@
     _X2_PINS _Y2_PINS _Z2_PINS \
     X_MS1_PIN, X_MS2_PIN, Y_MS1_PIN, Y_MS2_PIN, Z_MS1_PIN, Z_MS2_PIN \
   }
-
-#define HAS_DIGIPOTSS (PIN_EXISTS(DIGIPOTSS))
 
 #ifndef SCK_PIN
   #define SCK_PIN  SCK

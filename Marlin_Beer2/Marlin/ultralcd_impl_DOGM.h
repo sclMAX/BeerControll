@@ -289,6 +289,7 @@ static void drawOlla(u8g_uint_t x, u8g_uint_t y, char etiqueta){
   u8g.setPrintPos(x + 8, y + 14);
   lcd_print(etiqueta);
 }// DRAW OLLA
+// DRAW RECIRCULADO
 volatile millis_t tRecirculadoAnt = 0;
 static void drawRecirculado(u8g_uint_t x, u8g_uint_t y, char etiqueta){
   int radio = OLLA_HEIGTH / 4;
@@ -297,17 +298,17 @@ static void drawRecirculado(u8g_uint_t x, u8g_uint_t y, char etiqueta){
   lcd_print(etiqueta);
   millis_t now = millis();
   if(now > tRecirculadoAnt + 1000){
-    u8g.drawHLine(x + radio, y - radio , radio*2);
-    u8g.drawHLine(x - radio * 3, y + radio , radio*2);
+    u8g.drawHLine(x + radio, y - radio , radio*2 + 1);
+    u8g.drawHLine(x - radio * 3, y + radio , radio*2 + 1);
     tRecirculadoAnt = now;
   }else{
-    u8g.drawHLine(x + radio, y + radio , radio * 2);
-    u8g.drawHLine(x - radio * 3, y - radio , radio * 2);
+    u8g.drawHLine(x + radio, y + radio , radio * 2 + 1);
+    u8g.drawHLine(x - radio * 3, y - radio , radio * 2 + 1);
   }
-}
+}// DRAW RECIRCULADO
 
 static void lcd_implementation_status_screen() {
-  int anchoPantalla = 128;
+  u8g_uint_t anchoPantalla = u8g.getWidth();
   u8g.setColorIndex(1); // black on white 
   bool blink = lcd_blink();
   //HERVIDO

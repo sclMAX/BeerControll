@@ -104,11 +104,6 @@ FORCE_INLINE void serialprintPGM(const char* str) {
 
 void idle();
 void manage_inactivity(bool ignore_stepper_queue = false);
-
-#if ENABLED(DUAL_X_CARRIAGE) || ENABLED(DUAL_NOZZLE_DUPLICATION_MODE)
-  extern bool extruder_duplication_enabled;
-#endif
-
 #if HAS_X2_ENABLE
   #define  enable_x() do{ X_ENABLE_WRITE( X_ENABLE_ON); X2_ENABLE_WRITE( X_ENABLE_ON); }while(0)
   #define disable_x() do{ X_ENABLE_WRITE(!X_ENABLE_ON); X2_ENABLE_WRITE(!X_ENABLE_ON); axis_known_position[X_AXIS] = false; }while(0)
@@ -142,63 +137,37 @@ void manage_inactivity(bool ignore_stepper_queue = false);
   #define disable_z() NOOP
 #endif
 
-#if ENABLED(MIXING_EXTRUDER)
+#if HAS_E0_ENABLE
+  #define  enable_e0() E0_ENABLE_WRITE( E_ENABLE_ON)
+  #define disable_e0() E0_ENABLE_WRITE(!E_ENABLE_ON)
+#else
+  #define  enable_e0() NOOP
+  #define disable_e0() NOOP
+#endif
 
-  /**
-   * Mixing steppers synchronize their enable (and direction) together
-   */
-  #if MIXING_STEPPERS > 3
-    #define  enable_e0() { E0_ENABLE_WRITE( E_ENABLE_ON); E1_ENABLE_WRITE( E_ENABLE_ON); E2_ENABLE_WRITE( E_ENABLE_ON); E3_ENABLE_WRITE( E_ENABLE_ON); }
-    #define disable_e0() { E0_ENABLE_WRITE(!E_ENABLE_ON); E1_ENABLE_WRITE(!E_ENABLE_ON); E2_ENABLE_WRITE(!E_ENABLE_ON); E3_ENABLE_WRITE(!E_ENABLE_ON); }
-  #elif MIXING_STEPPERS > 2
-    #define  enable_e0() { E0_ENABLE_WRITE( E_ENABLE_ON); E1_ENABLE_WRITE( E_ENABLE_ON); E2_ENABLE_WRITE( E_ENABLE_ON); }
-    #define disable_e0() { E0_ENABLE_WRITE(!E_ENABLE_ON); E1_ENABLE_WRITE(!E_ENABLE_ON); E2_ENABLE_WRITE(!E_ENABLE_ON); }
-  #else
-    #define  enable_e0() { E0_ENABLE_WRITE( E_ENABLE_ON); E1_ENABLE_WRITE( E_ENABLE_ON); }
-    #define disable_e0() { E0_ENABLE_WRITE(!E_ENABLE_ON); E1_ENABLE_WRITE(!E_ENABLE_ON); }
-  #endif
+#if E_STEPPERS > 1 && HAS_E1_ENABLE
+  #define  enable_e1() E1_ENABLE_WRITE( E_ENABLE_ON)
+  #define disable_e1() E1_ENABLE_WRITE(!E_ENABLE_ON)
+#else
   #define  enable_e1() NOOP
   #define disable_e1() NOOP
+#endif
+
+#if E_STEPPERS > 2 && HAS_E2_ENABLE
+  #define  enable_e2() E2_ENABLE_WRITE( E_ENABLE_ON)
+  #define disable_e2() E2_ENABLE_WRITE(!E_ENABLE_ON)
+#else
   #define  enable_e2() NOOP
   #define disable_e2() NOOP
+#endif
+
+#if E_STEPPERS > 3 && HAS_E3_ENABLE
+  #define  enable_e3() E3_ENABLE_WRITE( E_ENABLE_ON)
+  #define disable_e3() E3_ENABLE_WRITE(!E_ENABLE_ON)
+#else
   #define  enable_e3() NOOP
   #define disable_e3() NOOP
-
-#else // !MIXING_EXTRUDER
-
-  #if HAS_E0_ENABLE
-    #define  enable_e0() E0_ENABLE_WRITE( E_ENABLE_ON)
-    #define disable_e0() E0_ENABLE_WRITE(!E_ENABLE_ON)
-  #else
-    #define  enable_e0() NOOP
-    #define disable_e0() NOOP
-  #endif
-
-  #if E_STEPPERS > 1 && HAS_E1_ENABLE
-    #define  enable_e1() E1_ENABLE_WRITE( E_ENABLE_ON)
-    #define disable_e1() E1_ENABLE_WRITE(!E_ENABLE_ON)
-  #else
-    #define  enable_e1() NOOP
-    #define disable_e1() NOOP
-  #endif
-
-  #if E_STEPPERS > 2 && HAS_E2_ENABLE
-    #define  enable_e2() E2_ENABLE_WRITE( E_ENABLE_ON)
-    #define disable_e2() E2_ENABLE_WRITE(!E_ENABLE_ON)
-  #else
-    #define  enable_e2() NOOP
-    #define disable_e2() NOOP
-  #endif
-
-  #if E_STEPPERS > 3 && HAS_E3_ENABLE
-    #define  enable_e3() E3_ENABLE_WRITE( E_ENABLE_ON)
-    #define disable_e3() E3_ENABLE_WRITE(!E_ENABLE_ON)
-  #else
-    #define  enable_e3() NOOP
-    #define disable_e3() NOOP
-  #endif
-
-#endif // !MIXING_EXTRUDER
+#endif
 
 /**
  * The axis order in all axis related arrays is X, Y, Z, E
@@ -215,11 +184,6 @@ void reset_bed_level();
 void kill(const char*);
 
 void quickstop_stepper();
-
-#if ENABLED(FILAMENT_RUNOUT_SENSOR)
-  void handle_filament_runout();
-#endif
-
 extern uint8_t marlin_debug_flags;
 #define DEBUGGING(F) (marlin_debug_flags & (DEBUG_## F))
 
@@ -236,11 +200,6 @@ void clamp_to_software_endstops(float target[3]);
 
 extern millis_t previous_cmd_ms;
 inline void refresh_cmd_timeout() { previous_cmd_ms = millis(); }
-
-#if ENABLED(FAST_PWM_FAN)
-  void setPwmFrequency(uint8_t pin, int val);
-#endif
-
 /**
  * Feedrate scaling and conversion
  */
@@ -283,47 +242,8 @@ int code_value_int();
 float code_value_temp_abs();
 float code_value_temp_diff();
 
-#if ENABLED(DELTA)
-  extern float delta[3];
-  extern float endstop_adj[3]; // axis[n].endstop_adj
-  extern float delta_radius;
-  extern float delta_diagonal_rod;
-  extern float delta_segments_per_second;
-  extern float delta_diagonal_rod_trim_tower_1;
-  extern float delta_diagonal_rod_trim_tower_2;
-  extern float delta_diagonal_rod_trim_tower_3;
-  void inverse_kinematics(const float cartesian[3]);
-  void recalc_delta_settings(float radius, float diagonal_rod);
-  #if ENABLED(AUTO_BED_LEVELING_FEATURE)
-    extern int delta_grid_spacing[2];
-    void adjust_delta(float cartesian[3]);
-  #endif
-#elif ENABLED(SCARA)
-  extern float delta[3];
-  extern float axis_scaling[3];  // Build size scaling
-  void inverse_kinematics(const float cartesian[3]);
-  void forward_kinematics_SCARA(float f_scara[3]);
-#endif
-
-#if ENABLED(Z_DUAL_ENDSTOPS)
-  extern float z_endstop_adj;
-#endif
-
-#if HAS_BED_PROBE
-  extern float zprobe_zoffset;
-#endif
-
 #if ENABLED(HOST_KEEPALIVE_FEATURE)
   extern uint8_t host_keepalive_interval;
-#endif
-
-#if FAN_COUNT > 0
-  extern int fanSpeeds[FAN_COUNT];
-#endif
-
-#if ENABLED(BARICUDA)
-  extern int baricuda_valve_pressure;
-  extern int baricuda_e_to_p_pressure;
 #endif
 
 #if ENABLED(PID_EXTRUSION_SCALING)
@@ -339,11 +259,6 @@ extern uint8_t active_extruder;
 #if HAS_TEMP_HOTEND || HAS_TEMP_BED
   void print_heaterstates();
 #endif
-
-#if ENABLED(MIXING_EXTRUDER)
-  extern float mixing_factor[MIXING_STEPPERS];
-#endif
-
 void calculate_volumetric_multipliers();
 
 // Buzzer

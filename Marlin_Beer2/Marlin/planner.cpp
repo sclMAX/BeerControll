@@ -168,11 +168,6 @@ void Planner::calculate_trapezoid_for_block(block_t* block, float entry_factor, 
     plateau_steps = 0;
   }
 
-  #if ENABLED(ADVANCE)
-    volatile long initial_advance = block->advance * sq(entry_factor);
-    volatile long final_advance = block->advance * sq(exit_factor);
-  #endif // ADVANCE
-
   // block->accelerate_until = accelerate_steps;
   // block->decelerate_after = accelerate_steps+plateau_steps;
   CRITICAL_SECTION_START;  // Fill variables used by the stepper in a critical section
@@ -181,10 +176,6 @@ void Planner::calculate_trapezoid_for_block(block_t* block, float entry_factor, 
     block->decelerate_after = accelerate_steps + plateau_steps;
     block->initial_rate = initial_rate;
     block->final_rate = final_rate;
-    #if ENABLED(ADVANCE)
-      block->initial_advance = initial_advance;
-      block->final_advance = final_advance;
-    #endif
   }
   CRITICAL_SECTION_END;
 }
@@ -386,39 +377,10 @@ void Planner::recalculate() {
  */
 void Planner::check_axes_activity() {
   unsigned char axis_active[NUM_AXIS] = { 0 },
-                tail_fan_speed[FAN_COUNT];
-
-  #if FAN_COUNT > 0
-    for (uint8_t i = 0; i < FAN_COUNT; i++) tail_fan_speed[i] = fanSpeeds[i];
-  #endif
-
-  #if ENABLED(BARICUDA)
-    #if HAS_HEATER_1
-      unsigned char tail_valve_pressure = baricuda_valve_pressure;
-    #endif
-    #if HAS_HEATER_2
-      unsigned char tail_e_to_p_pressure = baricuda_e_to_p_pressure;
-    #endif
-  #endif
-
+                tail_fan_speed[0];
   if (blocks_queued()) {
 
-    #if FAN_COUNT > 0
-      for (uint8_t i = 0; i < FAN_COUNT; i++) tail_fan_speed[i] = block_buffer[block_buffer_tail].fan_speed[i];
-    #endif
-
     block_t* block;
-
-    #if ENABLED(BARICUDA)
-      block = &block_buffer[block_buffer_tail];
-      #if HAS_HEATER_1
-        tail_valve_pressure = block->valve_pressure;
-      #endif
-      #if HAS_HEATER_2
-        tail_e_to_p_pressure = block->e_to_p_pressure;
-      #endif
-    #endif
-
     for (uint8_t b = block_buffer_tail; b != block_buffer_head; b = next_block_index(b)) {
       block = &block_buffer[b];
       LOOP_XYZE(i) if (block->steps[i]) axis_active[i]++;
@@ -442,98 +404,12 @@ void Planner::check_axes_activity() {
     }
   #endif
 
-  #if FAN_COUNT > 0
-
-    #if defined(FAN_MIN_PWM)
-      #define CALC_FAN_SPEED(f) (tail_fan_speed[f] ? ( FAN_MIN_PWM + (tail_fan_speed[f] * (255 - FAN_MIN_PWM)) / 255 ) : 0)
-    #else
-      #define CALC_FAN_SPEED(f) tail_fan_speed[f]
-    #endif
-
-    #ifdef FAN_KICKSTART_TIME
-
-      static millis_t fan_kick_end[FAN_COUNT] = { 0 };
-
-      #define KICKSTART_FAN(f) \
-        if (tail_fan_speed[f]) { \
-          millis_t ms = millis(); \
-          if (fan_kick_end[f] == 0) { \
-            fan_kick_end[f] = ms + FAN_KICKSTART_TIME; \
-            tail_fan_speed[f] = 255; \
-          } else { \
-            if (PENDING(ms, fan_kick_end[f])) { \
-              tail_fan_speed[f] = 255; \
-            } \
-          } \
-        } else { \
-          fan_kick_end[f] = 0; \
-        }
-
-      #if HAS_FAN0
-        KICKSTART_FAN(0);
-      #endif
-      #if HAS_FAN1
-        KICKSTART_FAN(1);
-      #endif
-      #if HAS_FAN2
-        KICKSTART_FAN(2);
-      #endif
-
-    #endif //FAN_KICKSTART_TIME
-
-    #if ENABLED(FAN_SOFT_PWM)
-      #if HAS_FAN0
-        thermalManager.fanSpeedSoftPwm[0] = CALC_FAN_SPEED(0);
-      #endif
-      #if HAS_FAN1
-        thermalManager.fanSpeedSoftPwm[1] = CALC_FAN_SPEED(1);
-      #endif
-      #if HAS_FAN2
-        thermalManager.fanSpeedSoftPwm[2] = CALC_FAN_SPEED(2);
-      #endif
-    #else
-      #if HAS_FAN0
-        analogWrite(FAN_PIN, CALC_FAN_SPEED(0));
-      #endif
-      #if HAS_FAN1
-        analogWrite(FAN1_PIN, CALC_FAN_SPEED(1));
-      #endif
-      #if HAS_FAN2
-        analogWrite(FAN2_PIN, CALC_FAN_SPEED(2));
-      #endif
-    #endif
-
-  #endif // FAN_COUNT > 0
-
   #if ENABLED(AUTOTEMP)
     getHighESpeed();
   #endif
-
-  #if ENABLED(BARICUDA)
-    #if HAS_HEATER_1
-      analogWrite(HEATER_1_PIN, tail_valve_pressure);
-    #endif
-    #if HAS_HEATER_2
-      analogWrite(HEATER_2_PIN, tail_e_to_p_pressure);
-    #endif
-  #endif
 }
 
-/**
- * Planner::buffer_line
- *
- * Add a new linear movement to the buffer.
- *
- *  x,y,z,e   - target position in mm
- *  fr_mm_s   - (target) speed of the move
- *  extruder  - target extruder
- */
-
-#if ENABLED(AUTO_BED_LEVELING_FEATURE) || ENABLED(MESH_BED_LEVELING)
-  void Planner::buffer_line(float x, float y, float z, const float& e, float fr_mm_s, const uint8_t extruder)
-#else
-  void Planner::buffer_line(const float& x, const float& y, const float& z, const float& e, float fr_mm_s, const uint8_t extruder)
-#endif  // AUTO_BED_LEVELING_FEATURE
+void Planner::buffer_line(const float& x, const float& y, const float& z, const float& e, float fr_mm_s, const uint8_t extruder)
 {
   // Calculate the buffer head after we push this byte
   int next_buffer_head = next_block_index(block_buffer_head);
@@ -593,31 +469,10 @@ void Planner::check_axes_activity() {
 
   // Mark block as not busy (Not executed by the stepper interrupt)
   block->busy = false;
-
-  // Number of steps for each axis
-  #if ENABLED(COREXY)
-    // corexy planning
-    // these equations follow the form of the dA and dB equations on http://www.corexy.com/theory.html
-    block->steps[A_AXIS] = labs(dx + dy);
-    block->steps[B_AXIS] = labs(dx - dy);
-    block->steps[Z_AXIS] = labs(dz);
-  #elif ENABLED(COREXZ)
-    // corexz planning
-    block->steps[A_AXIS] = labs(dx + dz);
-    block->steps[Y_AXIS] = labs(dy);
-    block->steps[C_AXIS] = labs(dx - dz);
-  #elif ENABLED(COREYZ)
-    // coreyz planning
-    block->steps[X_AXIS] = labs(dx);
-    block->steps[B_AXIS] = labs(dy + dz);
-    block->steps[C_AXIS] = labs(dy - dz);
-  #else
-    // default non-h-bot planning
-    block->steps[X_AXIS] = labs(dx);
-    block->steps[Y_AXIS] = labs(dy);
-    block->steps[Z_AXIS] = labs(dz);
-  #endif
-
+  // default non-h-bot planning
+  block->steps[X_AXIS] = labs(dx);
+  block->steps[Y_AXIS] = labs(dy);
+  block->steps[Z_AXIS] = labs(dz);
   block->steps[E_AXIS] = labs(de);
   block->steps[E_AXIS] *= volumetric_multiplier[extruder];
   block->steps[E_AXIS] *= extruder_multiplier[extruder];
@@ -627,74 +482,21 @@ void Planner::check_axes_activity() {
   // Bail if this is a zero-length block
   if (block->step_event_count <= dropsegments) return;
 
-  // For a mixing extruder, get a magnified step_event_count for each
-  #if ENABLED(MIXING_EXTRUDER)
-    for (uint8_t i = 0; i < MIXING_STEPPERS; i++)
-      block->mix_event_count[i] = (mixing_factor[i] < 0.0001) ? 0 : block->step_event_count / mixing_factor[i];
-  #endif
-
-  #if FAN_COUNT > 0
-    for (uint8_t i = 0; i < FAN_COUNT; i++) block->fan_speed[i] = fanSpeeds[i];
-  #endif
-
-  #if ENABLED(BARICUDA)
-    block->valve_pressure = baricuda_valve_pressure;
-    block->e_to_p_pressure = baricuda_e_to_p_pressure;
-  #endif
 
   // Compute direction bits for this block
   uint8_t db = 0;
-  #if ENABLED(COREXY)
-    if (dx < 0) SBI(db, X_HEAD); // Save the real Extruder (head) direction in X Axis
-    if (dy < 0) SBI(db, Y_HEAD); // ...and Y
-    if (dz < 0) SBI(db, Z_AXIS);
-    if (dx + dy < 0) SBI(db, A_AXIS); // Motor A direction
-    if (dx - dy < 0) SBI(db, B_AXIS); // Motor B direction
-  #elif ENABLED(COREXZ)
-    if (dx < 0) SBI(db, X_HEAD); // Save the real Extruder (head) direction in X Axis
-    if (dy < 0) SBI(db, Y_AXIS);
-    if (dz < 0) SBI(db, Z_HEAD); // ...and Z
-    if (dx + dz < 0) SBI(db, A_AXIS); // Motor A direction
-    if (dx - dz < 0) SBI(db, C_AXIS); // Motor C direction
-  #elif ENABLED(COREYZ)
-    if (dx < 0) SBI(db, X_AXIS);
-    if (dy < 0) SBI(db, Y_HEAD); // Save the real Extruder (head) direction in Y Axis
-    if (dz < 0) SBI(db, Z_HEAD); // ...and Z
-    if (dy + dz < 0) SBI(db, B_AXIS); // Motor B direction
-    if (dy - dz < 0) SBI(db, C_AXIS); // Motor C direction
-  #else
-    if (dx < 0) SBI(db, X_AXIS);
-    if (dy < 0) SBI(db, Y_AXIS);
-    if (dz < 0) SBI(db, Z_AXIS);
-  #endif
+  if (dx < 0) SBI(db, X_AXIS);
+  if (dy < 0) SBI(db, Y_AXIS);
+  if (dz < 0) SBI(db, Z_AXIS);
   if (de < 0) SBI(db, E_AXIS);
   block->direction_bits = db;
 
   block->active_extruder = extruder;
-
-  //enable active axes
-  #if ENABLED(COREXY)
-    if (block->steps[A_AXIS] || block->steps[B_AXIS]) {
-      enable_x();
-      enable_y();
-    }
-    #if DISABLED(Z_LATE_ENABLE)
-      if (block->steps[Z_AXIS]) enable_z();
-    #endif
-  #elif ENABLED(COREXZ)
-    if (block->steps[A_AXIS] || block->steps[C_AXIS]) {
-      enable_x();
-      enable_z();
-    }
-    if (block->steps[Y_AXIS]) enable_y();
-  #else
-    if (block->steps[X_AXIS]) enable_x();
-    if (block->steps[Y_AXIS]) enable_y();
-    #if DISABLED(Z_LATE_ENABLE)
-      if (block->steps[Z_AXIS]) enable_z();
-    #endif
+  if (block->steps[X_AXIS]) enable_x();
+  if (block->steps[Y_AXIS]) enable_y();
+  #if DISABLED(Z_LATE_ENABLE)
+    if (block->steps[Z_AXIS]) enable_z();
   #endif
-
   // Enable extruder(s)
   if (block->steps[E_AXIS]) {
 
@@ -706,12 +508,6 @@ void Planner::check_axes_activity() {
       switch(extruder) {
         case 0:
           enable_e0();
-          #if ENABLED(DUAL_X_CARRIAGE)
-            if (extruder_duplication_enabled) {
-              enable_e1();
-              g_uc_extruder_last_move[1] = (BLOCK_BUFFER_SIZE) * 2;
-            }
-          #endif
           g_uc_extruder_last_move[0] = (BLOCK_BUFFER_SIZE) * 2;
           #if EXTRUDERS > 1
             if (g_uc_extruder_last_move[1] == 0) disable_e1();
@@ -769,59 +565,17 @@ void Planner::check_axes_activity() {
     NOLESS(fr_mm_s, min_feedrate_mm_s);
   else
     NOLESS(fr_mm_s, min_travel_feedrate_mm_s);
-
-  /**
-   * This part of the code calculates the total length of the movement.
-   * For cartesian bots, the X_AXIS is the real X movement and same for Y_AXIS.
-   * But for corexy bots, that is not true. The "X_AXIS" and "Y_AXIS" motors (that should be named to A_AXIS
-   * and B_AXIS) cannot be used for X and Y length, because A=X+Y and B=X-Y.
-   * So we need to create other 2 "AXIS", named X_HEAD and Y_HEAD, meaning the real displacement of the Head.
-   * Having the real displacement of the head, we can calculate the total movement length and apply the desired speed.
-   */
-  #if ENABLED(COREXY) || ENABLED(COREXZ) || ENABLED(COREYZ)
-    float delta_mm[7];
-    #if ENABLED(COREXY)
-      delta_mm[X_HEAD] = dx * steps_to_mm[A_AXIS];
-      delta_mm[Y_HEAD] = dy * steps_to_mm[B_AXIS];
-      delta_mm[Z_AXIS] = dz * steps_to_mm[Z_AXIS];
-      delta_mm[A_AXIS] = (dx + dy) * steps_to_mm[A_AXIS];
-      delta_mm[B_AXIS] = (dx - dy) * steps_to_mm[B_AXIS];
-    #elif ENABLED(COREXZ)
-      delta_mm[X_HEAD] = dx * steps_to_mm[A_AXIS];
-      delta_mm[Y_AXIS] = dy * steps_to_mm[Y_AXIS];
-      delta_mm[Z_HEAD] = dz * steps_to_mm[C_AXIS];
-      delta_mm[A_AXIS] = (dx + dz) * steps_to_mm[A_AXIS];
-      delta_mm[C_AXIS] = (dx - dz) * steps_to_mm[C_AXIS];
-    #elif ENABLED(COREYZ)
-      delta_mm[X_AXIS] = dx * steps_to_mm[X_AXIS];
-      delta_mm[Y_HEAD] = dy * steps_to_mm[B_AXIS];
-      delta_mm[Z_HEAD] = dz * steps_to_mm[C_AXIS];
-      delta_mm[B_AXIS] = (dy + dz) * steps_to_mm[B_AXIS];
-      delta_mm[C_AXIS] = (dy - dz) * steps_to_mm[C_AXIS];
-    #endif
-  #else
-    float delta_mm[4];
-    delta_mm[X_AXIS] = dx * steps_to_mm[X_AXIS];
-    delta_mm[Y_AXIS] = dy * steps_to_mm[Y_AXIS];
-    delta_mm[Z_AXIS] = dz * steps_to_mm[Z_AXIS];
-  #endif
+  float delta_mm[4];
+  delta_mm[X_AXIS] = dx * steps_to_mm[X_AXIS];
+  delta_mm[Y_AXIS] = dy * steps_to_mm[Y_AXIS];
+  delta_mm[Z_AXIS] = dz * steps_to_mm[Z_AXIS];
   delta_mm[E_AXIS] = 0.01 * (de * steps_to_mm[E_AXIS]) * volumetric_multiplier[extruder] * extruder_multiplier[extruder];
 
   if (block->steps[X_AXIS] <= dropsegments && block->steps[Y_AXIS] <= dropsegments && block->steps[Z_AXIS] <= dropsegments) {
     block->millimeters = fabs(delta_mm[E_AXIS]);
   }
   else {
-    block->millimeters = sqrt(
-      #if ENABLED(COREXY)
-        sq(delta_mm[X_HEAD]) + sq(delta_mm[Y_HEAD]) + sq(delta_mm[Z_AXIS])
-      #elif ENABLED(COREXZ)
-        sq(delta_mm[X_HEAD]) + sq(delta_mm[Y_AXIS]) + sq(delta_mm[Z_HEAD])
-      #elif ENABLED(COREYZ)
-        sq(delta_mm[X_AXIS]) + sq(delta_mm[Y_HEAD]) + sq(delta_mm[Z_HEAD])
-      #else
-        sq(delta_mm[X_AXIS]) + sq(delta_mm[Y_AXIS]) + sq(delta_mm[Z_AXIS])
-      #endif
-    );
+    block->millimeters = sqrt(sq(delta_mm[X_AXIS]) + sq(delta_mm[Y_AXIS]) + sq(delta_mm[Z_AXIS]));
   }
   float inverse_millimeters = 1.0 / block->millimeters;  // Inverse millimeters to remove multiple divides
 
@@ -1053,45 +807,6 @@ void Planner::check_axes_activity() {
   // Update previous path unit_vector and nominal speed
   LOOP_XYZE(i) previous_speed[i] = current_speed[i];
   previous_nominal_speed = block->nominal_speed;
-
-  #if ENABLED(LIN_ADVANCE)
-
-    // block->steps[E_AXIS] == block->step_event_count: A problem occurs when there's a very tiny move before a retract.
-    // In this case, the retract and the move will be executed together.
-    // This leads to an enormous number of advance steps due to a huge e_acceleration.
-    // The math is correct, but you don't want a retract move done with advance!
-    // So this situation is filtered out here.
-    if (!block->steps[E_AXIS] || (!block->steps[X_AXIS] && !block->steps[Y_AXIS] && !block->steps[Z_AXIS]) || stepper.get_advance_k() == 0 || (uint32_t) block->steps[E_AXIS] == block->step_event_count) {
-      block->use_advance_lead = false;
-    }
-    else {
-      block->use_advance_lead = true;
-      block->e_speed_multiplier8 = (block->steps[E_AXIS] << 8) / block->step_event_count;
-    }
-
-  #elif ENABLED(ADVANCE)
-
-    // Calculate advance rate
-    if (!block->steps[E_AXIS] || (!block->steps[X_AXIS] && !block->steps[Y_AXIS] && !block->steps[Z_AXIS])) {
-      block->advance_rate = 0;
-      block->advance = 0;
-    }
-    else {
-      long acc_dist = estimate_acceleration_distance(0, block->nominal_rate, block->acceleration_steps_per_s2);
-      float advance = ((STEPS_PER_CUBIC_MM_E) * (EXTRUDER_ADVANCE_K)) * HYPOT(cse, EXTRUSION_AREA) * 256;
-      block->advance = advance;
-      block->advance_rate = acc_dist ? advance / (float)acc_dist : 0;
-    }
-    /**
-      SERIAL_ECHO_START;
-     SERIAL_ECHOPGM("advance :");
-     SERIAL_ECHO(block->advance/256.0);
-     SERIAL_ECHOPGM("advance rate :");
-     SERIAL_ECHOLN(block->advance_rate/256.0);
-     */
-
-  #endif // ADVANCE or LIN_ADVANCE
-
   calculate_trapezoid_for_block(block, block->entry_speed / block->nominal_speed, safe_speed / block->nominal_speed);
 
   // Move buffer head

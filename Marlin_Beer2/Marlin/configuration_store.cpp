@@ -81,8 +81,6 @@
  *  277  M665 B    delta_diagonal_rod_trim_tower_2 (float)
  *  281  M665 C    delta_diagonal_rod_trim_tower_3 (float)
  *
- * Z_DUAL_ENDSTOPS:
- *  285  M666 Z    z_endstop_adj (float)
  *
  * ULTIPANEL:
  *  289  M145 S0 H 0 (int)
@@ -415,14 +413,6 @@ void Config_ResetDefault() {
   planner.max_z_jerk = DEFAULT_ZJERK;
   planner.max_e_jerk = DEFAULT_EJERK;
   home_offset[X_AXIS] = home_offset[Y_AXIS] = home_offset[Z_AXIS] = 0;
-
-  #if ENABLED(MESH_BED_LEVELING)
-    mbl.reset();
-  #endif
-
-  #if HAS_BED_PROBE
-    zprobe_zoffset = Z_PROBE_OFFSET_FROM_EXTRUDER;
-  #endif
   #if ENABLED(ULTIPANEL)
     tempObjMacerador = 64;
     tempObjLicor = 75;
@@ -581,38 +571,6 @@ void Config_PrintSettings(bool forReplay) {
     }
   #endif
 
-  #if ENABLED(DELTA)
-    CONFIG_ECHO_START;
-    if (!forReplay) {
-      SERIAL_ECHOLNPGM("Endstop adjustment (mm):");
-      CONFIG_ECHO_START;
-    }
-    SERIAL_ECHOPAIR("  M666 X", endstop_adj[X_AXIS]);
-    SERIAL_ECHOPAIR(" Y", endstop_adj[Y_AXIS]);
-    SERIAL_ECHOPAIR(" Z", endstop_adj[Z_AXIS]);
-    SERIAL_EOL;
-    CONFIG_ECHO_START;
-    if (!forReplay) {
-      SERIAL_ECHOLNPGM("Delta settings: L=diagonal_rod, R=radius, S=segments_per_second, ABC=diagonal_rod_trim_tower_[123]");
-      CONFIG_ECHO_START;
-    }
-    SERIAL_ECHOPAIR("  M665 L", delta_diagonal_rod);
-    SERIAL_ECHOPAIR(" R", delta_radius);
-    SERIAL_ECHOPAIR(" S", delta_segments_per_second);
-    SERIAL_ECHOPAIR(" A", delta_diagonal_rod_trim_tower_1);
-    SERIAL_ECHOPAIR(" B", delta_diagonal_rod_trim_tower_2);
-    SERIAL_ECHOPAIR(" C", delta_diagonal_rod_trim_tower_3);
-    SERIAL_EOL;
-  #elif ENABLED(Z_DUAL_ENDSTOPS)
-    CONFIG_ECHO_START;
-    if (!forReplay) {
-      SERIAL_ECHOLNPGM("Z2 Endstop adjustment (mm):");
-      CONFIG_ECHO_START;
-    }
-    SERIAL_ECHOPAIR("  M666 Z", z_endstop_adj);
-    SERIAL_EOL;
-  #endif // DELTA
-
   #if ENABLED(ULTIPANEL)
     CONFIG_ECHO_START;
     if (!forReplay) {
@@ -723,19 +681,6 @@ void Config_PrintSettings(bool forReplay) {
     CONFIG_ECHO_START;
     SERIAL_ECHOLNPGM("  M200 D0");
   }
-
-  /**
-   * Auto Bed Leveling
-   */
-  #if HAS_BED_PROBE
-    if (!forReplay) {
-      CONFIG_ECHO_START;
-      SERIAL_ECHOLNPGM("Z-Probe Offset (mm):");
-    }
-    CONFIG_ECHO_START;
-    SERIAL_ECHOPAIR("  M851 Z", zprobe_zoffset);
-    SERIAL_EOL;
-  #endif
 }
 
 #endif // !DISABLE_M503

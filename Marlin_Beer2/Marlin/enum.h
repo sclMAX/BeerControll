@@ -27,9 +27,9 @@
  * Axis indices as enumerated constants
  *
  * Special axis:
- *  - A_AXIS and B_AXIS are used by COREXY printers
+ *  - A_AXIS and B_AXIS are used by  printers
  *  - X_HEAD and Y_HEAD is used for systems that don't have a 1:1 relationship
- *    between X_AXIS and X Head movement, like CoreXY bots
+ *    between X_AXIS and X Head movement, like  bots
  */
 enum AxisEnum {
   NO_AXIS = -1,

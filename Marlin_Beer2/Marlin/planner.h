@@ -1,26 +1,4 @@
 /**
- * Marlin 3D Printer Firmware
- * Copyright (C) 2016 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
- *
- * Based on Sprinter and grbl.
- * Copyright (C) 2011 Camiel Gubbels / Erik van der Zalm
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- */
-
-/**
  * planner.h
  *
  * Buffer movement commands and manage the acceleration profile plan
@@ -34,11 +12,6 @@
 
 #include "types.h"
 #include "MarlinConfig.h"
-
-#if ENABLED(AUTO_BED_LEVELING_FEATURE)
-  #include "vector_3.h"
-#endif
-
 class Planner;
 extern Planner planner;
 
@@ -58,28 +31,11 @@ typedef struct {
   // Fields used by the bresenham algorithm for tracing the line
   long steps[NUM_AXIS];                     // Step count along each axis
   unsigned long step_event_count;           // The number of step events required to complete this block
-
-  #if ENABLED(MIXING_EXTRUDER)
-    unsigned long mix_event_count[MIXING_STEPPERS]; // Scaled step_event_count for the mixing steppers
-  #endif
-
   long accelerate_until,                    // The index of the step event on which to stop acceleration
        decelerate_after,                    // The index of the step event on which to start decelerating
        acceleration_rate;                   // The acceleration rate used for acceleration calculation
 
   unsigned char direction_bits;             // The direction bit set for this block (refers to *_DIRECTION_BIT in config.h)
-
-  // Advance extrusion
-  #if ENABLED(LIN_ADVANCE)
-    bool use_advance_lead;
-    int e_speed_multiplier8; // Factorised by 2^8 to avoid float
-  #elif ENABLED(ADVANCE)
-    long advance_rate;
-    volatile long initial_advance;
-    volatile long final_advance;
-    float advance;
-  #endif
-
   // Fields used by the motion planner to manage acceleration
   float nominal_speed,                               // The nominal speed for this block in mm/sec
         entry_speed,                                 // Entry speed at previous-current junction in mm/sec
@@ -94,15 +50,6 @@ typedef struct {
                 initial_rate,                        // The jerk-adjusted step rate at start of block
                 final_rate,                          // The minimal rate at exit
                 acceleration_steps_per_s2;           // acceleration steps/sec^2
-
-  #if FAN_COUNT > 0
-    unsigned long fan_speed[FAN_COUNT];
-  #endif
-
-  #if ENABLED(BARICUDA)
-    unsigned long valve_pressure, e_to_p_pressure;
-  #endif
-
   volatile char busy;
 
 } block_t;
@@ -224,7 +171,6 @@ class Planner {
        * Used by G92, G28, G29, and other procedures.
        *
        * Multiplies by axis_steps_per_mm[] and does necessary conversion
-       * for COREXY / COREXZ / COREYZ to set the corresponding stepper positions.
        *
        * Clears previous speed values.
        */

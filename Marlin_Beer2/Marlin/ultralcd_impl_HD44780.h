@@ -788,21 +788,6 @@ void lcd_implementation_drawedit(const char* pstr, const char* value=NULL) {
     if (thermalManager.degTargetBed() > 0) leds |= LED_A;
 
     if (thermalManager.degTargetHotend(0) > 0) leds |= LED_B;
-
-    #if FAN_COUNT > 0
-      if (0
-        #if HAS_FAN0
-          || fanSpeeds[0]
-        #endif
-        #if HAS_FAN1
-          || fanSpeeds[1]
-        #endif
-        #if HAS_FAN2
-          || fanSpeeds[2]
-        #endif
-      ) leds |= LED_C;
-    #endif // FAN_COUNT > 0
-
     #if HOTENDS > 1
       if (thermalManager.degTargetHotend(1) > 0) leds |= LED_C;
     #endif

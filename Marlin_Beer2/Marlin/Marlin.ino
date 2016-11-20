@@ -54,14 +54,6 @@
   #endif
 #endif
 
-#if HAS_DIGIPOTSS
-  #include <SPI.h>
-#endif
-
-#if ENABLED(DIGIPOT_I2C)
-  #include <Wire.h>
-#endif
-
 #if ENABLED(HAVE_TMCDRIVER)
   #include <SPI.h>
   #include <TMC26XStepper.h>
