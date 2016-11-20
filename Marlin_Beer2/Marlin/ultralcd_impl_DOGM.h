@@ -268,10 +268,12 @@ FORCE_INLINE void _draw_axis_label(AxisEnum axis, const char *pstr, bool blink) 
     }
   }
 }
+#define OLLA_WIDTH 20
+#define OLLA_HEIGTH 20
 //  DRAW OLLA 
 static void drawOlla(u8g_uint_t x, u8g_uint_t y, char etiqueta){
-  u8g_uint_t ollaAlto = 20;
-  u8g_uint_t ollaAncho = 20;
+  u8g_uint_t ollaAlto = OLLA_HEIGTH;
+  u8g_uint_t ollaAncho = OLLA_WIDTH;
   u8g_uint_t ollaIntAncho = ollaAncho - 2;
   u8g_uint_t ollaIntAlto = ollaAlto - 1;
   u8g.drawBox(x,y,ollaAncho,ollaAlto);
@@ -287,21 +289,44 @@ static void drawOlla(u8g_uint_t x, u8g_uint_t y, char etiqueta){
   u8g.setPrintPos(x + 8, y + 14);
   lcd_print(etiqueta);
 }// DRAW OLLA
+volatile millis_t tRecirculadoAnt = 0;
+static void drawRecirculado(u8g_uint_t x, u8g_uint_t y, char etiqueta){
+  int radio = OLLA_HEIGTH / 4;
+  u8g.drawCircle(x,y, radio);
+  u8g.setPrintPos(x -2 , y + 4);
+  lcd_print(etiqueta);
+  millis_t now = millis();
+  if(now > tRecirculadoAnt + 1000){
+    u8g.drawHLine(x + radio, y - radio , radio*2);
+    u8g.drawHLine(x - radio * 3, y + radio , radio*2);
+    tRecirculadoAnt = now;
+  }else{
+    u8g.drawHLine(x + radio, y + radio , radio * 2);
+    u8g.drawHLine(x - radio * 3, y - radio , radio * 2);
+  }
+}
 
 static void lcd_implementation_status_screen() {
+  int anchoPantalla = 128;
   u8g.setColorIndex(1); // black on white 
   bool blink = lcd_blink();
-  //MACERADOR
-  drawOlla(4, 8, 'M');
+  //HERVIDO
+  drawOlla(3, 8, 'L');
+
+  if(true){
+      drawRecirculado((OLLA_WIDTH + 3) + (((anchoPantalla/2) - (OLLA_WIDTH / 2)) - (OLLA_WIDTH + 3))/2, 20, 'R');
+  }
+   //MACERADOR
+  drawOlla((anchoPantalla / 2) -(OLLA_WIDTH / 2) , 8, 'M');
   //LICOR
-  drawOlla(80, 8, 'L');
+  drawOlla(anchoPantalla - (OLLA_WIDTH + 3), 8, 'H');
   // Status Menu Font for SD info, Heater status, Fan, XYZ
   lcd_setFont(FONT_STATUSMENU);
-   // Extruders
-  HOTEND_LOOP() _draw_heater_status(5 + e * 25, e);
+  _draw_heater_status(4 , LICOR);
+  _draw_heater_status((anchoPantalla/2)-(OLLA_WIDTH / 2) , MACERADOR);
   // Heated bed
   #if HOTENDS < 4 && HAS_TEMP_BED
-    _draw_heater_status(81, -1);
+    _draw_heater_status(anchoPantalla - (OLLA_WIDTH + 2), HERVIDO);
   #endif
   u8g.setColorIndex(1); // black on white
   // Status line

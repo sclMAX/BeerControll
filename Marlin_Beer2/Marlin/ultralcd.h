@@ -46,14 +46,10 @@
     FORCE_INLINE void lcd_buttons_update() {}
   #endif
 
-    extern int preheatHotendTemp1;
-    extern int preheatBedTemp1;
-    extern int preheatMacerador;
-    extern int preheatLicor;
-    extern int preheatFanSpeed1;
-    extern int preheatHotendTemp2;
-    extern int preheatBedTemp2;
-    extern int preheatFanSpeed2;
+    extern int tempObjMacerador;
+    extern int tempObjLicor;
+    extern int tempObjHervido;
+    
     extern const int etapas;
     extern int MaceradorTemp  [] ;//= {60, 65, 71, 75};
     extern int LicorTemp      [] ;//= {65, 70, 75, 78};
@@ -65,9 +61,9 @@
     extern bool E4Recircula;
     bool lcd_blink();
 
-#if ENABLED(ULTIPANEL)
-#define BLEN_A 0
-#define BLEN_B 1
+  #if ENABLED(ULTIPANEL)
+    #define BLEN_A 0
+    #define BLEN_B 1
     // Encoder click is directly connected
     #if BUTTON_EXISTS(ENC)
       #define BLEN_C 2

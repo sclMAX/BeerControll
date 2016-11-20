@@ -7,9 +7,9 @@
 #include "stepper.h"
 #include "configuration_store.h"
 
-int preheatHotendTemp1, preheatBedTemp1, preheatFanSpeed1,
-    preheatHotendTemp2, preheatBedTemp2, preheatFanSpeed2,
-    preheatMacerador, preheatLicor;
+
+
+int tempObjMacerador, tempObjLicor, tempObjHervido;
 const int etapas = 4;
 int MaceradorTemp [etapas] = {60,65,71,75};
 int LicorTemp     [etapas] = {65,70,75,78};
@@ -540,15 +540,24 @@ void kill_screen(const char* lcd_msg) {
    * "Prepare" submenu items
    *
    */
-  void _lcd_preheat(int endnum, const float temph, const float tempb, const int fan) {
-    if (temph > 0) thermalManager.setTargetHotend(temph, endnum);
-    if(tempb > 0) thermalManager.setTargetBed(tempb);
-    UNUSED(fan);
+  void lcd_activar_macerador(){
+    thermalManager.setTargetHotend(tempObjMacerador, MACERADOR);
     lcd_return_to_status();
   }
-  void lcd_preheat_macerador(){ _lcd_preheat(0, preheatMacerador, 0, preheatFanSpeed1); }
-  void lcd_preheat_licor(){ _lcd_preheat(0, 0, preheatLicor, preheatFanSpeed1); }
-  void lcd_preheat_all(){ _lcd_preheat(0, preheatMacerador, preheatLicor, preheatFanSpeed1); }
+  void lcd_activar_licor(){
+    thermalManager.setTargetHotend(tempObjLicor, LICOR);
+    lcd_return_to_status();
+  }
+  void lcd_activar_hervido(){
+    thermalManager.setTargetBed(tempObjHervido);
+    lcd_return_to_status();
+  }
+  void lcd_activar_todo(){
+    lcd_activar_licor();
+    lcd_activar_macerador();
+    lcd_activar_hervido();
+    lcd_return_to_status();
+  }
   /**
    *
    * "Prepare" submenu
@@ -558,9 +567,10 @@ void kill_screen(const char* lcd_msg) {
   static void lcd_prepare_menu() {
     START_MENU();
     MENU_ITEM(back, MSG_BACK);
-    MENU_ITEM(function, MSG_ALL, lcd_preheat_all);
-    MENU_ITEM(function, MSG_PREHEAT_1, lcd_preheat_macerador);
-    MENU_ITEM(function, MSG_BED, lcd_preheat_licor);
+    MENU_ITEM(function, MSG_ACTIVAR_LICOR, lcd_activar_licor);
+    MENU_ITEM(function, MSG_ACTIVAR_MACERADOR, lcd_activar_macerador);
+    MENU_ITEM(function, MSG_ACTIVAR_HERVIDO, lcd_activar_hervido);
+    MENU_ITEM(function, MSG_ALL, lcd_activar_todo);
     END_MENU();
   }// MENU PRECALENTAR
 
@@ -670,16 +680,9 @@ void kill_screen(const char* lcd_msg) {
   static void lcd_control_temperature_menu() {
     START_MENU();
     MENU_ITEM(back, MSG_BACK);   
-    MENU_ITEM_EDIT(int3, MSG_NOZZLE, &preheatMacerador, HEATER_0_MINTEMP, HEATER_0_MAXTEMP - 15);
-    MENU_ITEM_EDIT(int3, MSG_BED, &preheatLicor, BED_MINTEMP,BED_MAXTEMP - 15);
-    // Autotemp, Min, Max, Fact
-    //
-    #if ENABLED(AUTOTEMP) && (TEMP_SENSOR_0 != 0)
-      MENU_ITEM_EDIT(bool, MSG_AUTOTEMP, &planner.autotemp_enabled);
-      MENU_ITEM_EDIT(float3, MSG_MIN, &planner.autotemp_min, 0, HEATER_0_MAXTEMP - 15);
-      MENU_ITEM_EDIT(float3, MSG_MAX, &planner.autotemp_max, 0, HEATER_0_MAXTEMP - 15);
-      MENU_ITEM_EDIT(float32, MSG_FACTOR, &planner.autotemp_factor, 0.0, 1.0);
-    #endif
+    MENU_ITEM_EDIT(int3, MSG_OLLA_LICOR, &tempObjLicor, 20, 110);
+    MENU_ITEM_EDIT(int3, MSG_OLLA_MACERADO, &tempObjMacerador, 20,110);
+    MENU_ITEM_EDIT(int3, MSG_OLLA_HERVIDO, &tempObjHervido, 20,110);
     //
     // PID-P, PID-I, PID-D, PID-C, PID Autotune
     // PID-P E1, PID-I E1, PID-D E1, PID-C E1, PID Autotune E1

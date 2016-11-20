@@ -85,7 +85,7 @@
  *  285  M666 Z    z_endstop_adj (float)
  *
  * ULTIPANEL:
- *  289  M145 S0 H preheatHotendTemp1 (int)
+ *  289  M145 S0 H 0 (int)
  *  291  M145 S0 B preheatBedTemp1 (int)
  *  293  M145 S0 F preheatFanSpeed1 (int)
  *  295  M145 S1 H preheatHotendTemp2 (int)
@@ -199,8 +199,9 @@ void Config_StoreSettings()  {
 
   eeprom_checksum = 0; // clear before first "real data"
 
-  EEPROM_WRITE(preheatMacerador);
-  EEPROM_WRITE(preheatLicor);
+  EEPROM_WRITE(tempObjMacerador);
+  EEPROM_WRITE(tempObjLicor);
+  EEPROM_WRITE(tempObjHervido);
   for(int idx = 0; idx < etapas; idx++){
     EEPROM_WRITE(MaceradorTemp[idx]);
     EEPROM_WRITE(LicorTemp[idx]);
@@ -296,8 +297,9 @@ void Config_RetrieveSettings() {
   else {
     float dummy = 0;
     eeprom_checksum = 0; // clear before reading first "real data"
-    EEPROM_READ(preheatMacerador);
-    EEPROM_READ(preheatLicor);
+    EEPROM_READ(tempObjMacerador);
+    EEPROM_READ(tempObjLicor);
+    EEPROM_READ(tempObjHervido);
     for(int idx = 0; idx < etapas; idx++){
       EEPROM_READ(MaceradorTemp[idx]);
       EEPROM_READ(LicorTemp[idx]);
@@ -422,8 +424,9 @@ void Config_ResetDefault() {
     zprobe_zoffset = Z_PROBE_OFFSET_FROM_EXTRUDER;
   #endif
   #if ENABLED(ULTIPANEL)
-    preheatMacerador = PREHEAT_1_TEMP_HOTEND;
-    preheatLicor = PREHEAT_1_TEMP_BED;
+    tempObjMacerador = 64;
+    tempObjLicor = 75;
+    tempObjHervido = 110;
   #endif
   #if ENABLED(PIDTEMP)
     #if ENABLED(PID_PARAMS_PER_HOTEND) && HOTENDS > 1
@@ -616,14 +619,14 @@ void Config_PrintSettings(bool forReplay) {
       SERIAL_ECHOLNPGM("Material heatup parameters:");
       CONFIG_ECHO_START;
     }
-    SERIAL_ECHOPAIR("  M145 S0 H", preheatHotendTemp1);
-    SERIAL_ECHOPAIR(" B", preheatBedTemp1);
-    SERIAL_ECHOPAIR(" F", preheatFanSpeed1);
+    SERIAL_ECHOPAIR("  M145 S0 H", 0);
+    SERIAL_ECHOPAIR(" B", 0);
+    SERIAL_ECHOPAIR(" F", 0);
     SERIAL_EOL;
     CONFIG_ECHO_START;
-    SERIAL_ECHOPAIR("  M145 S1 H", preheatHotendTemp2);
-    SERIAL_ECHOPAIR(" B", preheatBedTemp2);
-    SERIAL_ECHOPAIR(" F", preheatFanSpeed2);
+    SERIAL_ECHOPAIR("  M145 S1 H", 0);
+    SERIAL_ECHOPAIR(" B", 0);
+    SERIAL_ECHOPAIR(" F", 0);
     SERIAL_EOL;
   #endif // ULTIPANEL
 

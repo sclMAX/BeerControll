@@ -104,6 +104,15 @@
 #ifndef MSG_PREHEAT_1
   #define MSG_PREHEAT_1                       "Preheat PLA"
 #endif
+#ifndef MSG_ACTIVAR_LICOR 
+  #define MSG_ACTIVAR_LICOR                   "Olla Licor"
+#endif
+#ifndef MSG_ACTIVAR_MACERADOR 
+  #define MSG_ACTIVAR_MACERADOR               "Olla Macerador"
+#endif
+#ifndef MSG_ACTIVAR_HERVIDO 
+  #define MSG_ACTIVAR_HERVIDO                 "Olla Hevido"
+#endif
 #ifndef MSG_PREHEAT_1_N
   #define MSG_PREHEAT_1_N                     MSG_PREHEAT_1 " "
 #endif
