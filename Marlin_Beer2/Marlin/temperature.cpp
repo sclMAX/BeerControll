@@ -10,6 +10,7 @@
 #if ENABLED(USE_WATCHDOG)
   #include "watchdog.h"
 #endif
+#define WRITE_HEATER_BED(v) WRITE(HEATER_BED_PIN, v)
 
 #ifdef K1 // Defined in Configuration.h in the PID settings
   #define K2 (1.0-K1)
@@ -45,16 +46,10 @@ unsigned char Temperature::soft_pwm_bed;
     float Temperature::Kp[HOTENDS] = ARRAY_BY_HOTENDS1(DEFAULT_Kp),
           Temperature::Ki[HOTENDS] = ARRAY_BY_HOTENDS1((DEFAULT_Ki) * (PID_dT)),
           Temperature::Kd[HOTENDS] = ARRAY_BY_HOTENDS1((DEFAULT_Kd) / (PID_dT));
-    #if ENABLED(PID_EXTRUSION_SCALING)
-      float Temperature::Kc[HOTENDS] = ARRAY_BY_HOTENDS1(DEFAULT_Kc);
-    #endif
   #else
     float Temperature::Kp = DEFAULT_Kp,
           Temperature::Ki = (DEFAULT_Ki) * (PID_dT),
           Temperature::Kd = (DEFAULT_Kd) / (PID_dT);
-    #if ENABLED(PID_EXTRUSION_SCALING)
-      float Temperature::Kc = DEFAULT_Kc;
-    #endif
   #endif
 #endif
 
@@ -79,14 +74,6 @@ volatile bool Temperature::temp_meas_ready = false;
         Temperature::pTerm[HOTENDS],
         Temperature::iTerm[HOTENDS],
         Temperature::dTerm[HOTENDS];
-
-  #if ENABLED(PID_EXTRUSION_SCALING)
-    float Temperature::cTerm[HOTENDS];
-    long Temperature::last_e_position;
-    long Temperature::lpq[LPQ_MAX_LEN];
-    int Temperature::lpq_ptr = 0;
-  #endif
-
   float Temperature::pid_error[HOTENDS],
         Temperature::temp_iState_min[HOTENDS],
         Temperature::temp_iState_max[HOTENDS];
@@ -367,9 +354,6 @@ Temperature::Temperature() { }
 
 void Temperature::updatePID() {
   #if ENABLED(PIDTEMP)
-    #if ENABLED(PID_EXTRUSION_SCALING)
-      last_e_position = 0;
-    #endif
     HOTEND_LOOP() {
       temp_iState_max[e] = (PID_INTEGRAL_DRIVE_MAX) / PID_PARAM(Ki, e);
     }
@@ -449,24 +433,6 @@ float Temperature::get_pid_output(int e) {
         iTerm[HOTEND_INDEX] = PID_PARAM(Ki, HOTEND_INDEX) * temp_iState[HOTEND_INDEX];
 
         pid_output = pTerm[HOTEND_INDEX] + iTerm[HOTEND_INDEX] - dTerm[HOTEND_INDEX];
-
-        #if ENABLED(PID_EXTRUSION_SCALING)
-          cTerm[HOTEND_INDEX] = 0;
-          if (_HOTEND_TEST) {
-            long e_position = stepper.position(E_AXIS);
-            if (e_position > last_e_position) {
-              lpq[lpq_ptr] = e_position - last_e_position;
-              last_e_position = e_position;
-            }
-            else {
-              lpq[lpq_ptr] = 0;
-            }
-            if (++lpq_ptr >= lpq_len) lpq_ptr = 0;
-            cTerm[HOTEND_INDEX] = (lpq[lpq_ptr] * planner.steps_to_mm[E_AXIS]) * PID_PARAM(Kc, HOTEND_INDEX);
-            pid_output += cTerm[HOTEND_INDEX];
-          }
-        #endif // PID_EXTRUSION_SCALING
-
         if (pid_output > PID_MAX) {
           if (pid_error[HOTEND_INDEX] > 0) temp_iState[HOTEND_INDEX] -= pid_error[HOTEND_INDEX]; // conditional un-integration
           pid_output = PID_MAX;
@@ -488,9 +454,6 @@ float Temperature::get_pid_output(int e) {
       SERIAL_ECHOPAIR(MSG_PID_DEBUG_PTERM, pTerm[HOTEND_INDEX]);
       SERIAL_ECHOPAIR(MSG_PID_DEBUG_ITERM, iTerm[HOTEND_INDEX]);
       SERIAL_ECHOPAIR(MSG_PID_DEBUG_DTERM, dTerm[HOTEND_INDEX]);
-      #if ENABLED(PID_EXTRUSION_SCALING)
-        SERIAL_ECHOPAIR(MSG_PID_DEBUG_CTERM, cTerm[HOTEND_INDEX]);
-      #endif
       SERIAL_EOL;
     #endif //PID_DEBUG
 
@@ -570,12 +533,6 @@ void Temperature::manage_heater() {
 
     // Check if temperature is within the correct range
     soft_pwm[e] = (current_temperature[e] > minttemp[e] || is_preheating(e)) && current_temperature[e] < maxttemp[e] ? (int)pid_output >> 1 : 0;
-    #if ENABLED(TEMP_SENSOR_1_AS_REDUNDANT)
-      if (fabs(current_temperature[0] - redundant_temperature) > MAX_REDUNDANT_TEMP_SENSOR_DIFF) {
-        _temp_error(0, PSTR(MSG_REDUNDANCY), PSTR(MSG_ERR_REDUNDANT_TEMP));
-      }
-    #endif
-
   } // Hotends Loop
 
   #if DISABLED(PIDTEMPBED)
@@ -588,20 +545,7 @@ void Temperature::manage_heater() {
       float pid_output = get_pid_output_bed();
 
       soft_pwm_bed = current_temperature_bed > BED_MINTEMP && current_temperature_bed < BED_MAXTEMP ? (int)pid_output >> 1 : 0;
-
-    #elif ENABLED(BED_LIMIT_SWITCHING)
-      // Check if temperature is within the correct band
-      if (current_temperature_bed > BED_MINTEMP && current_temperature_bed < BED_MAXTEMP) {
-        if (current_temperature_bed >= target_temperature_bed + BED_HYSTERESIS)
-          soft_pwm_bed = 0;
-        else if (current_temperature_bed <= target_temperature_bed - (BED_HYSTERESIS))
-          soft_pwm_bed = MAX_BED_POWER >> 1;
-      }
-      else {
-        soft_pwm_bed = 0;
-        WRITE_HEATER_BED(LOW);
-      }
-    #else // !PIDTEMPBED && !BED_LIMIT_SWITCHING
+    #else // !PIDTEMPBED
       // Check if temperature is within the correct range
       if (current_temperature_bed > BED_MINTEMP && current_temperature_bed < BED_MAXTEMP) {
         soft_pwm_bed = current_temperature_bed < target_temperature_bed ? MAX_BED_POWER >> 1 : 0;
@@ -755,20 +699,12 @@ void Temperature::init() {
     #if ENABLED(PIDTEMP)
       temp_iState_min[e] = 0.0;
       temp_iState_max[e] = (PID_INTEGRAL_DRIVE_MAX) / PID_PARAM(Ki, e);
-      #if ENABLED(PID_EXTRUSION_SCALING)
-        last_e_position = 0;
-      #endif
     #endif //PIDTEMP
     #if ENABLED(PIDTEMPBED)
       temp_iState_min_bed = 0.0;
       temp_iState_max_bed = (PID_BED_INTEGRAL_DRIVE_MAX) / bedKi;
     #endif //PIDTEMPBED
   }
-
-  #if ENABLED(PIDTEMP) && ENABLED(PID_EXTRUSION_SCALING)
-    last_e_position = 0;
-  #endif
-
   #if HAS_HEATER_0
     SET_OUTPUT(HEATER_0_PIN);
   #endif
@@ -901,7 +837,7 @@ void Temperature::disable_all_heaters() {
   #if HAS_TEMP_HOTEND
     setTargetHotend(0, 0);
     soft_pwm[0] = 0;
-    WRITE_HEATER_0P(LOW); // Should HEATERS_PARALLEL apply here? Then change to DISABLE_HEATER(0)
+    WRITE_HEATER_0P(LOW); // Should  apply here? Then change to DISABLE_HEATER(0)
   #endif
 
   #if HOTENDS > 1 && HAS_TEMP_1
@@ -974,7 +910,7 @@ void Temperature::isr() {
 
   // Statics per heater
   ISR_STATICS(0);
-  #if (HOTENDS > 1) || ENABLED(HEATERS_PARALLEL)
+  #if (HOTENDS > 1)
     ISR_STATICS(1);
     #if HOTENDS > 2
       ISR_STATICS(2);

@@ -26,16 +26,8 @@
 
 #ifndef TEMPERATURE_H
 #define TEMPERATURE_H
-
-#include "planner.h"
 #include "thermistortables.h"
-
 #include "MarlinConfig.h"
-
-#if ENABLED(PID_EXTRUSION_SCALING)
-  #include "stepper.h"
-#endif
-
 #ifndef SOFT_PWM_SCALE
   #define SOFT_PWM_SCALE 0
 #endif
@@ -76,7 +68,7 @@ class Temperature {
       #if ENABLED(PID_PARAMS_PER_HOTEND) && HOTENDS > 1
 
         static float Kp[HOTENDS], Ki[HOTENDS], Kd[HOTENDS];
-        #if ENABLED(PID_EXTRUSION_SCALING)
+        #if ENABLED()
           static float Kc[HOTENDS];
         #endif
         #define PID_PARAM(param, h) Temperature::param[h]
@@ -84,7 +76,7 @@ class Temperature {
       #else
 
         static float Kp, Ki, Kd;
-        #if ENABLED(PID_EXTRUSION_SCALING)
+        #if ENABLED()
           static float Kc;
         #endif
         #define PID_PARAM(param, h) Temperature::param
@@ -121,14 +113,7 @@ class Temperature {
                    iTerm[HOTENDS],
                    dTerm[HOTENDS];
 
-      #if ENABLED(PID_EXTRUSION_SCALING)
-        static float cTerm[HOTENDS];
-        static long last_e_position;
-        static long lpq[LPQ_MAX_LEN];
-        static int lpq_ptr;
-      #endif
-
-      static float pid_error[HOTENDS],
+     static float pid_error[HOTENDS],
                    temp_iState_min[HOTENDS],
                    temp_iState_max[HOTENDS];
       static bool pid_reset[HOTENDS];
@@ -314,17 +299,6 @@ class Temperature {
      * Update the temp manager when PID values change
      */
     static void updatePID();
-
-    static void autotempShutdown() {
-      #if ENABLED(AUTOTEMP)
-        if (planner.autotemp_enabled) {
-          planner.autotemp_enabled = false;
-          if (degTargetHotend(EXTRUDER_IDX) > planner.autotemp_min)
-            setTargetHotend(0, EXTRUDER_IDX);
-        }
-      #endif
-    }
-
   private:
 
     static void set_current_temp_raw();

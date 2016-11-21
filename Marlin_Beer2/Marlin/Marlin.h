@@ -1,24 +1,3 @@
-/**
- * Marlin 3D Printer Firmware
- * Copyright (C) 2016 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
- *
- * Based on Sprinter and grbl.
- * Copyright (C) 2011 Camiel Gubbels / Erik van der Zalm
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- */
 #ifndef MARLIN_H
 #define MARLIN_H
 
@@ -104,55 +83,15 @@ FORCE_INLINE void serialprintPGM(const char* str) {
 
 void idle();
 void manage_inactivity(bool ignore_stepper_queue = false);
-#if HAS_X2_ENABLE
-  #define  enable_x() do{ X_ENABLE_WRITE( X_ENABLE_ON); X2_ENABLE_WRITE( X_ENABLE_ON); }while(0)
-  #define disable_x() do{ X_ENABLE_WRITE(!X_ENABLE_ON); X2_ENABLE_WRITE(!X_ENABLE_ON); axis_known_position[X_AXIS] = false; }while(0)
-#elif HAS_X_ENABLE
-  #define  enable_x() X_ENABLE_WRITE( X_ENABLE_ON)
-  #define disable_x() do{ X_ENABLE_WRITE(!X_ENABLE_ON); axis_known_position[X_AXIS] = false; }while(0)
-#else
-  #define  enable_x() NOOP
-  #define disable_x() NOOP
-#endif
-
-#if HAS_Y2_ENABLE
-  #define  enable_y() do{ Y_ENABLE_WRITE( Y_ENABLE_ON); Y2_ENABLE_WRITE(Y_ENABLE_ON); }while(0)
-  #define disable_y() do{ Y_ENABLE_WRITE(!Y_ENABLE_ON); Y2_ENABLE_WRITE(!Y_ENABLE_ON); axis_known_position[Y_AXIS] = false; }while(0)
-#elif HAS_Y_ENABLE
-  #define  enable_y() Y_ENABLE_WRITE( Y_ENABLE_ON)
-  #define disable_y() do{ Y_ENABLE_WRITE(!Y_ENABLE_ON); axis_known_position[Y_AXIS] = false; }while(0)
-#else
-  #define  enable_y() NOOP
-  #define disable_y() NOOP
-#endif
-
-#if HAS_Z2_ENABLE
-  #define  enable_z() do{ Z_ENABLE_WRITE( Z_ENABLE_ON); Z2_ENABLE_WRITE(Z_ENABLE_ON); }while(0)
-  #define disable_z() do{ Z_ENABLE_WRITE(!Z_ENABLE_ON); Z2_ENABLE_WRITE(!Z_ENABLE_ON); axis_known_position[Z_AXIS] = false; }while(0)
-#elif HAS_Z_ENABLE
-  #define  enable_z() Z_ENABLE_WRITE( Z_ENABLE_ON)
-  #define disable_z() do{ Z_ENABLE_WRITE(!Z_ENABLE_ON); axis_known_position[Z_AXIS] = false; }while(0)
-#else
-  #define  enable_z() NOOP
-  #define disable_z() NOOP
-#endif
-
-#if HAS_E0_ENABLE
-  #define  enable_e0() E0_ENABLE_WRITE( E_ENABLE_ON)
-  #define disable_e0() E0_ENABLE_WRITE(!E_ENABLE_ON)
-#else
-  #define  enable_e0() NOOP
-  #define disable_e0() NOOP
-#endif
-
-#if E_STEPPERS > 1 && HAS_E1_ENABLE
-  #define  enable_e1() E1_ENABLE_WRITE( E_ENABLE_ON)
-  #define disable_e1() E1_ENABLE_WRITE(!E_ENABLE_ON)
-#else
-  #define  enable_e1() NOOP
-  #define disable_e1() NOOP
-#endif
-
+#define  enable_x() NOOP
+#define disable_x() NOOP
+#define  enable_y() NOOP
+#define disable_y() NOOP
+#define  enable_z() NOOP
+#define disable_z() NOOP
+#define  enable_e0() NOOP
+#define disable_e0() NOOP
+#define  enable_e1() NOOP
 #if E_STEPPERS > 2 && HAS_E2_ENABLE
   #define  enable_e2() E2_ENABLE_WRITE( E_ENABLE_ON)
   #define disable_e2() E2_ENABLE_WRITE(!E_ENABLE_ON)
@@ -173,17 +112,11 @@ void manage_inactivity(bool ignore_stepper_queue = false);
  * The axis order in all axis related arrays is X, Y, Z, E
  */
 #define _AXIS(AXIS) AXIS ##_AXIS
-
-void enable_all_steppers();
-void disable_all_steppers();
-
 void FlushSerialRequestResend();
 void ok_to_send();
 
 void reset_bed_level();
 void kill(const char*);
-
-void quickstop_stepper();
 extern uint8_t marlin_debug_flags;
 #define DEBUGGING(F) (marlin_debug_flags & (DEBUG_## F))
 
@@ -200,42 +133,13 @@ void clamp_to_software_endstops(float target[3]);
 
 extern millis_t previous_cmd_ms;
 inline void refresh_cmd_timeout() { previous_cmd_ms = millis(); }
-/**
- * Feedrate scaling and conversion
- */
-extern int feedrate_percentage;
 
 #define MMM_TO_MMS(MM_M) ((MM_M)/60.0)
 #define MMS_TO_MMM(MM_S) ((MM_S)*60.0)
 #define MMM_SCALED(MM_M) ((MM_M)*feedrate_percentage*0.01)
 #define MMS_SCALED(MM_S) MMM_SCALED(MM_S)
 #define MMM_TO_MMS_SCALED(MM_M) (MMS_SCALED(MMM_TO_MMS(MM_M)))
-
-extern bool axis_relative_modes[];
-extern bool volumetric_enabled;
-extern int extruder_multiplier[EXTRUDERS]; // sets extrude multiply factor (in percent) for each extruder individually
-extern float filament_size[EXTRUDERS]; // cross-sectional area of filament (in millimeters), typically around 1.75 or 2.85, 0 disables the volumetric calculations for the extruder.
-extern float volumetric_multiplier[EXTRUDERS]; // reciprocal of cross-sectional area of filament (in square millimeters), stored this way to reduce computational burden in planner
-extern bool axis_known_position[3]; // axis[n].is_known
-extern bool axis_homed[3]; // axis[n].is_homed
 extern volatile bool wait_for_heatup;
-
-extern float current_position[NUM_AXIS];
-extern float position_shift[3];
-extern float home_offset[3];
-extern float sw_endstop_min[3];
-extern float sw_endstop_max[3];
-
-#define LOGICAL_POSITION(POS, AXIS) (POS + home_offset[AXIS] + position_shift[AXIS])
-#define RAW_POSITION(POS, AXIS)     (POS - home_offset[AXIS] - position_shift[AXIS])
-#define LOGICAL_X_POSITION(POS)     LOGICAL_POSITION(POS, X_AXIS)
-#define LOGICAL_Y_POSITION(POS)     LOGICAL_POSITION(POS, Y_AXIS)
-#define LOGICAL_Z_POSITION(POS)     LOGICAL_POSITION(POS, Z_AXIS)
-#define RAW_X_POSITION(POS)         RAW_POSITION(POS, X_AXIS)
-#define RAW_Y_POSITION(POS)         RAW_POSITION(POS, Y_AXIS)
-#define RAW_Z_POSITION(POS)         RAW_POSITION(POS, Z_AXIS)
-#define RAW_CURRENT_POSITION(AXIS)  RAW_POSITION(current_position[AXIS], AXIS)
-
 // GCode support for external objects
 bool code_seen(char);
 int code_value_int();
@@ -245,11 +149,6 @@ float code_value_temp_diff();
 #if ENABLED(HOST_KEEPALIVE_FEATURE)
   extern uint8_t host_keepalive_interval;
 #endif
-
-#if ENABLED(PID_EXTRUSION_SCALING)
-  extern int lpq_len;
-#endif
-
 // Print job timer
 extern Stopwatch print_job_timer;
 

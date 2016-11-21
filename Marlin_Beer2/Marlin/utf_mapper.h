@@ -24,12 +24,7 @@
 #define UTF_MAPPER_H
 
 #include  "language.h"
-
-#if ENABLED(DOGLCD)
-  #define HARDWARE_CHAR_OUT u8g.print
-#else
-  #define HARDWARE_CHAR_OUT lcd.write
-#endif
+#define HARDWARE_CHAR_OUT u8g.print
 
 #if ENABLED(DISPLAY_CHARSET_ISO10646_1)
   #define MAPPER_ONE_TO_ONE

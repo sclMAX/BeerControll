@@ -4,7 +4,6 @@
 #include "language.h"
 #include "cardreader.h"
 #include "temperature.h"
-#include "stepper.h"
 #include "configuration_store.h"
 
 
@@ -19,6 +18,7 @@ bool E1Recircula = false;
 bool E2Recircula = false;
 bool E3Recircula = false;
 bool E4Recircula = false;
+volatile bool isResirculando = false;
 
 uint8_t lcd_status_message_level;
 
@@ -368,29 +368,7 @@ static void lcd_status_screen() {
   if (current_click) {
     lcd_goto_screen(lcd_main_menu, true);
     lcd_implementation_init();
-  }
-  int new_frm = feedrate_percentage + (int32_t)encoderPosition;
-  // Dead zone at 100% feedrate
-  if ((feedrate_percentage < 100 && new_frm > 100) || (feedrate_percentage > 100 && new_frm < 100)) {
-    feedrate_percentage = 100;
-    encoderPosition = 0;
-  }
-  else if (feedrate_percentage == 100) {
-    if ((int32_t)encoderPosition > ENCODER_FEEDRATE_DEADZONE) {
-      feedrate_percentage += (int32_t)encoderPosition - (ENCODER_FEEDRATE_DEADZONE);
-      encoderPosition = 0;
-    }
-    else if ((int32_t)encoderPosition < -(ENCODER_FEEDRATE_DEADZONE)) {
-      feedrate_percentage += (int32_t)encoderPosition + ENCODER_FEEDRATE_DEADZONE;
-      encoderPosition = 0;
-    }
-  }
-  else {
-    feedrate_percentage = new_frm;
-    encoderPosition = 0;
-  }
-  feedrate_percentage = constrain(feedrate_percentage, 10, 999);
-  
+  }  
 }
 
 /**
@@ -401,20 +379,13 @@ static void lcd_status_screen() {
 void kill_screen(const char* lcd_msg) {
   lcd_init();
   lcd_setalertstatuspgm(lcd_msg);
-  #if ENABLED(DOGLCD)
-    u8g.firstPage();
-    do {
-      lcd_kill_screen();
-    } while (u8g.nextPage());
-  #else
+  u8g.firstPage();
+  do {
     lcd_kill_screen();
-  #endif
+  } while (u8g.nextPage());
 }
 
 #if ENABLED(ULTIPANEL)
-  inline void line_to_current(AxisEnum axis) {
-    planner.buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], MMM_TO_MMS(manual_feedrate_mm_m[axis]), active_extruder);
-  }
    //ENFRIAR FUNCION
   static void lcd_cooldown() {
     thermalManager.disable_all_heaters();
@@ -488,6 +459,7 @@ void kill_screen(const char* lcd_msg) {
     START_MENU();
     MENU_ITEM(back, MSG_BACK);
     MENU_ITEM(submenu, MSG_PREPARE, lcd_prepare_menu);//Precalentar
+    MENU_ITEM_EDIT(bool, MSG_RECIRCULA, &isResirculando); // Activar resirculado
     MENU_ITEM(function, "Iniciar " MSG_PROCESS, lcd_iniciar_prosesos_menu);//Procesos    
     MENU_ITEM(function, MSG_COOLDOWN, lcd_cooldown);//Apagar Quemadores   
     MENU_ITEM(submenu, MSG_CONTROL, lcd_control_menu);//Ajustes 
@@ -568,40 +540,6 @@ void kill_screen(const char* lcd_msg) {
     MENU_ITEM(function, MSG_RESTORE_FAILSAFE, Config_ResetDefault);
     END_MENU();
   }
- 
-  /**
-   *
-   * "Temperature" submenu
-   *
-   */
-
-  #if ENABLED(PID_AUTOTUNE_MENU)
-
-    #if ENABLED(PIDTEMP)
-      int autotune_temp[HOTENDS] = ARRAY_BY_HOTENDS1(150);
-      const int heater_maxtemp[HOTENDS] = ARRAY_BY_HOTENDS(HEATER_0_MAXTEMP, HEATER_1_MAXTEMP, HEATER_2_MAXTEMP, HEATER_3_MAXTEMP);
-    #endif
-
-    #if ENABLED(PIDTEMPBED)
-      int autotune_temp_bed = 70;
-    #endif
-
-    static void _lcd_autotune(int e) {
-      char cmd[30];
-      sprintf_P(cmd, PSTR("M303 U1 E%i S%i"), e,
-        #if HAS_PID_FOR_BOTH
-          e < 0 ? autotune_temp_bed : autotune_temp[e]
-        #elif ENABLED(PIDTEMPBED)
-          autotune_temp_bed
-        #else
-          autotune_temp[e]
-        #endif
-      );
-      enqueue_and_echo_command(cmd);
-    }
-
-  #endif //PID_AUTOTUNE_MENU
-
   #if ENABLED(PIDTEMP)
 
     // Helpers for editing PID Ki & Kd values
@@ -623,15 +561,7 @@ void kill_screen(const char* lcd_msg) {
     #define _PIDTEMP_BASE_FUNCTIONS(eindex) \
       void copy_and_scalePID_i_E ## eindex() { copy_and_scalePID_i(eindex); } \
       void copy_and_scalePID_d_E ## eindex() { copy_and_scalePID_d(eindex); }
-
-    #if ENABLED(PID_AUTOTUNE_MENU)
-      #define _PIDTEMP_FUNCTIONS(eindex) \
-        _PIDTEMP_BASE_FUNCTIONS(eindex); \
-        void lcd_autotune_callback_E ## eindex() { _lcd_autotune(eindex); }
-    #else
-      #define _PIDTEMP_FUNCTIONS(eindex) _PIDTEMP_BASE_FUNCTIONS(eindex)
-    #endif
-
+    #define _PIDTEMP_FUNCTIONS(eindex) _PIDTEMP_BASE_FUNCTIONS(eindex)
     _PIDTEMP_FUNCTIONS(0);
     #if ENABLED(PID_PARAMS_PER_HOTEND)
       #if HOTENDS > 1
@@ -673,23 +603,8 @@ void kill_screen(const char* lcd_msg) {
         MENU_ITEM_EDIT(float52, MSG_PID_P ELABEL, &PID_PARAM(Kp, eindex), 1, 9990); \
         MENU_ITEM_EDIT_CALLBACK(float52, MSG_PID_I ELABEL, &raw_Ki, 0.01, 9990, copy_and_scalePID_i_E ## eindex); \
         MENU_ITEM_EDIT_CALLBACK(float52, MSG_PID_D ELABEL, &raw_Kd, 1, 9990, copy_and_scalePID_d_E ## eindex)
-
-      #if ENABLED(PID_EXTRUSION_SCALING)
-        #define _PID_MENU_ITEMS(ELABEL, eindex) \
-          _PID_BASE_MENU_ITEMS(ELABEL, eindex); \
-          MENU_ITEM_EDIT(float3, MSG_PID_C ELABEL, &PID_PARAM(Kc, eindex), 1, 9990)
-      #else
-        #define _PID_MENU_ITEMS(ELABEL, eindex) _PID_BASE_MENU_ITEMS(ELABEL, eindex)
-      #endif
-
-      #if ENABLED(PID_AUTOTUNE_MENU)
-        #define PID_MENU_ITEMS(ELABEL, eindex) \
-          _PID_MENU_ITEMS(ELABEL, eindex); \
-          MENU_MULTIPLIER_ITEM_EDIT_CALLBACK(int3, MSG_PID_AUTOTUNE ELABEL, &autotune_temp[eindex], 150, heater_maxtemp[eindex] - 15, lcd_autotune_callback_E ## eindex)
-      #else
-        #define PID_MENU_ITEMS(ELABEL, eindex) _PID_MENU_ITEMS(ELABEL, eindex)
-      #endif
-
+       #define _PID_MENU_ITEMS(ELABEL, eindex) _PID_BASE_MENU_ITEMS(ELABEL, eindex)
+      #define PID_MENU_ITEMS(ELABEL, eindex) _PID_MENU_ITEMS(ELABEL, eindex)
       #if ENABLED(PID_PARAMS_PER_HOTEND) && HOTENDS > 1
         PID_MENU_ITEMS(MSG_E1, 0);
         PID_MENU_ITEMS(MSG_E2, 1);
@@ -705,9 +620,6 @@ void kill_screen(const char* lcd_msg) {
     #endif //PIDTEMP
     END_MENU();
   }
-
-  static void _reset_acceleration_rates() { planner.reset_acceleration_rates(); }
-  static void _planner_refresh_positioning() { planner.refresh_positioning(); }
   /**
    *
    * Functions for editing single values
@@ -1036,24 +948,17 @@ void lcd_update() {
         case LCDVIEW_NONE:
           break;
       }
-
-      #if ENABLED(DOGLCD)  // Changes due to different driver architecture of the DOGM display
-        static int8_t dot_color = 0;
-        dot_color = 1 - dot_color;
-        u8g.firstPage();
-        do {
-          lcd_setFont(FONT_MENU);
-          u8g.setPrintPos(125, 0);
-          u8g.setColorIndex(dot_color); // Set color for the alive dot
-          u8g.drawPixel(127, 63); // draw alive dot
-          u8g.setColorIndex(1); // black on white
-          (*currentScreen)();
-        } while (u8g.nextPage());
-      #elif ENABLED(ULTIPANEL)
+      static int8_t dot_color = 0;
+      dot_color = 1 - dot_color;
+      u8g.firstPage();
+      do {
+        lcd_setFont(FONT_MENU);
+        u8g.setPrintPos(125, 0);
+        u8g.setColorIndex(dot_color); // Set color for the alive dot
+        u8g.drawPixel(127, 63); // draw alive dot
+        u8g.setColorIndex(1); // black on white
         (*currentScreen)();
-      #else
-        lcd_status_screen();
-      #endif
+      } while (u8g.nextPage());    
     }
 
     #if ENABLED(ULTIPANEL)
@@ -1252,11 +1157,7 @@ void lcd_reset_alert_level() { lcd_status_message_level = 0; }
   }
 
   bool lcd_detected(void) {
-    #if (ENABLED(LCD_I2C_TYPE_MCP23017) || ENABLED(LCD_I2C_TYPE_MCP23008)) && ENABLED(DETECT_DEVICE)
-      return lcd.LcdDetected() == 1;
-    #else
-      return true;
-    #endif
+    return true;
   }
 
   bool lcd_clicked() { return LCD_CLICKED; }

@@ -30,9 +30,6 @@
 */
 
 #include "MarlinSerial.h"
-
-#include "stepper.h"
-
 #include "Marlin.h"
 
 #ifndef USBCON
@@ -525,9 +522,6 @@ MarlinSerial customizedSerial;
               break;
             case state_M112:
               kill(PSTR(MSG_KILLED));
-              break;
-            case state_M410:
-              quickstop_stepper();
               break;
             default:
               break;

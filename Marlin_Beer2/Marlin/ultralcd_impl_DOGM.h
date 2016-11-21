@@ -252,22 +252,6 @@ FORCE_INLINE void _draw_heater_status(int x, int heater) {
   }
 }
 
-FORCE_INLINE void _draw_axis_label(AxisEnum axis, const char *pstr, bool blink) {
-  if (blink)
-    lcd_printPGM(pstr);
-  else {
-    if (!axis_homed[axis])
-      lcd_printPGM(PSTR("?"));
-    else {
-      #if DISABLED(DISABLE_REDUCED_ACCURACY_WARNING)
-        if (!axis_known_position[axis])
-          lcd_printPGM(PSTR(" "));
-        else
-      #endif
-      lcd_printPGM(pstr);
-    }
-  }
-}
 #define OLLA_WIDTH 20
 #define OLLA_HEIGTH 20
 //  DRAW OLLA 
@@ -314,7 +298,7 @@ static void lcd_implementation_status_screen() {
   //HERVIDO
   drawOlla(3, 8, 'L');
 
-  if(true){
+  if(isResirculando){
       drawRecirculado((OLLA_WIDTH + 3) + (((anchoPantalla/2) - (OLLA_WIDTH / 2)) - (OLLA_WIDTH + 3))/2, 20, 'R');
   }
    //MACERADOR

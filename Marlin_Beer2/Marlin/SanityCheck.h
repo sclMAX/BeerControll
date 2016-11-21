@@ -69,14 +69,6 @@
   #error "WEBSITE_URL must be specified."
 #endif
 
-
-/**
- * Individual axis homing is useless for DELTAS
- */
-#if ENABLED(INDIVIDUAL_AXIS_HOMING_MENU) && ENABLED(DELTA)
-  #error "INDIVIDUAL_AXIS_HOMING_MENU is incompatible with DELTA kinematics."
-#endif
-
 /**
  * Options only for EXTRUDERS > 1
  */
@@ -89,60 +81,6 @@
   #if ENABLED(TEMP_SENSOR_1_AS_REDUNDANT)
     #error "EXTRUDERS must be 1 with TEMP_SENSOR_1_AS_REDUNDANT."
   #endif
-
-  #if ENABLED(HEATERS_PARALLEL)
-    #error "EXTRUDERS must be 1 with HEATERS_PARALLEL."
-  #endif
-
-#elif ENABLED(SINGLENOZZLE)
-  #error "SINGLENOZZLE requires 2 or more EXTRUDERS."
-#endif
-
-/**
- * Mixing Extruder requirements
- */
-#if ENABLED(MIXING_EXTRUDER)
-  #if EXTRUDERS > 1
-    #error "MIXING_EXTRUDER currently only supports one extruder."
-  #endif
-  #if MIXING_STEPPERS < 2
-    #error "You must set MIXING_STEPPERS >= 2 for a mixing extruder."
-  #endif
-  #if ENABLED(FILAMENT_SENSOR)
-    #error "MIXING_EXTRUDER is incompatible with FILAMENT_SENSOR. Comment out this line to use it anyway."
-  #endif
-#endif
-
-/**
- * Limited number of servos
- */
-#if defined(NUM_SERVOS) && NUM_SERVOS > 0
-  #if NUM_SERVOS > 4
-    #error "The maximum number of SERVOS in Marlin is 4."
-  #elif HAS_Z_SERVO_ENDSTOP && Z_ENDSTOP_SERVO_NR >= NUM_SERVOS
-    #error "Z_ENDSTOP_SERVO_NR must be smaller than NUM_SERVOS."
-  #endif
-#endif
-
-/**
- * Servo deactivation depends on servo endstops
- */
-#if ENABLED(DEACTIVATE_SERVOS_AFTER_MOVE) && !HAS_Z_SERVO_ENDSTOP
-  #error "Z_ENDSTOP_SERVO_NR is required for DEACTIVATE_SERVOS_AFTER_MOVE."
-#endif
-
-/**
- * Required LCD language
- */
-#if DISABLED(DOGLCD) && ENABLED(ULTRA_LCD) && !defined(DISPLAY_CHARSET_HD44780)
-  #error "You must set DISPLAY_CHARSET_HD44780 to JAPANESE, WESTERN or CYRILLIC for your LCD controller."
-#endif
-
-/**
- * Bed Heating Options - PID vs Limit Switching
- */
-#if ENABLED(PIDTEMPBED) && ENABLED(BED_LIMIT_SWITCHING)
-  #error "To use BED_LIMIT_SWITCHING you must disable PIDTEMPBED."
 #endif
 
 /**
@@ -157,15 +95,6 @@
 #endif
 
 /**
- * Allen Key
- * Deploying the Allen Key probe uses big moves in z direction. Too dangerous for an unhomed z-axis.
- */
-#if ENABLED(Z_PROBE_ALLEN_KEY) && (Z_HOME_DIR < 0) && ENABLED(Z_MIN_PROBE_USES_Z_MIN_ENDSTOP_PIN)
-  #error "You can't home to a z min endstop with a Z_PROBE_ALLEN_KEY"
-#endif
-
-
-/**
  * Test Heater, Temp Sensor, and Extruder Pins; Sensor Type must also be set.
  */
 #if !HAS_HEATER_0
@@ -176,12 +105,6 @@
   #error "E0_STEP_PIN, E0_DIR_PIN, or E0_ENABLE_PIN not defined for this board."
 #elif TEMP_SENSOR_0 == 0
   #error "TEMP_SENSOR_0 is required."
-#endif
-
-#if HOTENDS > 1 || ENABLED(HEATERS_PARALLEL)
-  #if !HAS_HEATER_1
-    #error "HEATER_1_PIN not defined for this board."
-  #endif
 #endif
 
 #if HOTENDS > 1
@@ -288,8 +211,6 @@
   #error "PID_PARAMS_PER_EXTRUDER is deprecated. Use PID_PARAMS_PER_HOTEND instead."
 #elif defined(EXTRUDER_WATTS) || defined(BED_WATTS)
   #error "EXTRUDER_WATTS and BED_WATTS are deprecated. Remove them from your configuration."
-#elif defined(SERVO_ENDSTOP_ANGLES)
-  #error "SERVO_ENDSTOP_ANGLES is deprecated. Use Z_SERVO_ANGLES instead."
 #elif defined(X_ENDSTOP_SERVO_NR) || defined(Y_ENDSTOP_SERVO_NR)
   #error "X_ENDSTOP_SERVO_NR and Y_ENDSTOP_SERVO_NR are deprecated and should be removed."
 #elif defined(XY_TRAVEL_SPEED)
@@ -316,8 +237,6 @@
   #error "HOMING_FEEDRATE is deprecated. Set individual rates with HOMING_FEEDRATE_(XY|Z|E) instead."
 #elif defined(MANUAL_HOME_POSITIONS)
   #error "MANUAL_HOME_POSITIONS is deprecated. Set MANUAL_[XYZ]_HOME_POS as-needed instead."
-#elif defined(PID_ADD_EXTRUSION_RATE)
-  #error "PID_ADD_EXTRUSION_RATE is now PID_EXTRUSION_SCALING and is DISABLED by default. Are you sure you want to use this option? Please update your configuration."
 #elif defined(Z_RAISE_BEFORE_HOMING)
   #error "Z_RAISE_BEFORE_HOMING is now Z_HOMING_HEIGHT. Please update your configuration."
 #elif defined(MIN_Z_HEIGHT_FOR_HOMING)

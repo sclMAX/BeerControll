@@ -23,7 +23,6 @@
 #include "cardreader.h"
 
 #include "ultralcd.h"
-#include "stepper.h"
 #include "temperature.h"
 #include "language.h"
 
@@ -603,7 +602,6 @@ void CardReader::updir() {
 }
 
 void CardReader::printingHasFinished() {
-  stepper.synchronize();
   file.close();
   if (file_subcall_ctr > 0) { // Heading up to a parent file that called current as a procedure.
     file_subcall_ctr--;

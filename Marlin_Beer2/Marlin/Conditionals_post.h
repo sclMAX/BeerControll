@@ -1,26 +1,4 @@
 /**
- * Marlin 3D Printer Firmware
- * Copyright (C) 2016 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
- *
- * Based on Sprinter and grbl.
- * Copyright (C) 2011 Camiel Gubbels / Erik van der Zalm
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- */
-
-/**
  * Conditionals_post.h
  * Defines that depend on configuration but are not editable.
  */
@@ -46,33 +24,17 @@
   #ifdef MANUAL_X_HOME_POS
     #define X_HOME_POS MANUAL_X_HOME_POS
   #elif ENABLED(BED_CENTER_AT_0_0)
-    #if ENABLED(DELTA)
-      #define X_HOME_POS 0
-    #else
-      #define X_HOME_POS ((X_MAX_LENGTH) * (X_HOME_DIR) * 0.5)
-    #endif
+    #define X_HOME_POS ((X_MAX_LENGTH) * (X_HOME_DIR) * 0.5)
   #else
-    #if ENABLED(DELTA)
-      #define X_HOME_POS ((X_MAX_LENGTH) * 0.5)
-    #else
-      #define X_HOME_POS (X_HOME_DIR < 0 ? X_MIN_POS : X_MAX_POS)
-    #endif
+    #define X_HOME_POS (X_HOME_DIR < 0 ? X_MIN_POS : X_MAX_POS)
   #endif
 
   #ifdef MANUAL_Y_HOME_POS
     #define Y_HOME_POS MANUAL_Y_HOME_POS
   #elif ENABLED(BED_CENTER_AT_0_0)
-    #if ENABLED(DELTA)
-      #define Y_HOME_POS 0
-    #else
-      #define Y_HOME_POS ((Y_MAX_LENGTH) * (Y_HOME_DIR) * 0.5)
-    #endif
+    #define Y_HOME_POS ((Y_MAX_LENGTH) * (Y_HOME_DIR) * 0.5)
   #else
-    #if ENABLED(DELTA)
-      #define Y_HOME_POS ((Y_MAX_LENGTH) * 0.5)
-    #else
-      #define Y_HOME_POS (Y_HOME_DIR < 0 ? Y_MIN_POS : Y_MAX_POS)
-    #endif
+    #define Y_HOME_POS (Y_HOME_DIR < 0 ? Y_MIN_POS : Y_MAX_POS)
   #endif
 
   #ifdef MANUAL_Z_HOME_POS
@@ -81,48 +43,11 @@
     #define Z_HOME_POS (Z_HOME_DIR < 0 ? Z_MIN_POS : Z_MAX_POS)
   #endif
 
-  /**
-   * The BLTouch Probe emulates a servo probe
-   */
-  #if ENABLED(BLTOUCH)
-    #undef Z_ENDSTOP_SERVO_NR
-    #undef Z_SERVO_ANGLES
-    #define Z_ENDSTOP_SERVO_NR 0
-    #define Z_SERVO_ANGLES {10,90} // For BLTouch 10=deploy, 90=retract
-    #undef DEACTIVATE_SERVOS_AFTER_MOVE
-    #if ENABLED(Z_MIN_PROBE_USES_Z_MIN_ENDSTOP_PIN)
-      #undef Z_MIN_ENDSTOP_INVERTING
-      #define Z_MIN_ENDSTOP_INVERTING false
-    #endif
-  #endif
-
-  /**
-   * Auto Bed Leveling and Z Probe Repeatability Test
-   */
-  #define HAS_PROBING_PROCEDURE (ENABLED(AUTO_BED_LEVELING_FEATURE) || ENABLED(Z_MIN_PROBE_REPEATABILITY_TEST))
-
   // Boundaries for probing based on set limits
   #define MIN_PROBE_X (max(X_MIN_POS, X_MIN_POS + X_PROBE_OFFSET_FROM_EXTRUDER))
   #define MAX_PROBE_X (min(X_MAX_POS, X_MAX_POS + X_PROBE_OFFSET_FROM_EXTRUDER))
   #define MIN_PROBE_Y (max(Y_MIN_POS, Y_MIN_POS + Y_PROBE_OFFSET_FROM_EXTRUDER))
   #define MAX_PROBE_Y (min(Y_MAX_POS, Y_MAX_POS + Y_PROBE_OFFSET_FROM_EXTRUDER))
-
-  #define HAS_Z_SERVO_ENDSTOP (defined(Z_ENDSTOP_SERVO_NR) && Z_ENDSTOP_SERVO_NR >= 0)
-
-  /**
-   * Z Sled Probe requires Z_SAFE_HOMING
-   */
-  #if ENABLED(Z_PROBE_SLED)
-    #define Z_SAFE_HOMING
-  #endif
-
-  /**
-   * DELTA should ignore Z_SAFE_HOMING
-   */
-  #if ENABLED(DELTA)
-    #undef Z_SAFE_HOMING
-  #endif
-
   /**
    * Safe Homing Options
    */
@@ -266,6 +191,7 @@
   #define HAS_HEATER_1 (PIN_EXISTS(HEATER_1))
   #define HAS_HEATER_2 (PIN_EXISTS(HEATER_2))
   #define HAS_HEATER_3 (PIN_EXISTS(HEATER_3))
+  #define HAS_TEMP_BED (PIN_EXISTS(TEMP_BED) && TEMP_SENSOR_BED != 0 && TEMP_SENSOR_BED > -2)
   #define HAS_KILL (PIN_EXISTS(KILL))
   #define HAS_X_MIN (PIN_EXISTS(X_MIN))
   #define HAS_X_MAX (PIN_EXISTS(X_MAX))
@@ -310,9 +236,6 @@
   #define HAS_E3_STEP (PIN_EXISTS(E3_STEP))
   #define HAS_E4_STEP (PIN_EXISTS(E4_STEP))
   #define HAS_BUZZER (PIN_EXISTS(BEEPER))
-
-  #define HAS_MOTOR_CURRENT_PWM (PIN_EXISTS(MOTOR_CURRENT_PWM_XY) || PIN_EXISTS(MOTOR_CURRENT_PWM_Z) || PIN_EXISTS(MOTOR_CURRENT_PWM_E))
-
   #define HAS_TEMP_HOTEND (HAS_TEMP_0)
 
   /**
@@ -327,7 +250,7 @@
    * Helper Macros for heaters and extruder fan
    */
   #define WRITE_HEATER_0P(v) WRITE(HEATER_0_PIN, v)
-  #if HOTENDS > 1 || ENABLED(HEATERS_PARALLEL)
+  #if HOTENDS > 1 
     #define WRITE_HEATER_1(v) WRITE(HEATER_1_PIN, v)
     #if HOTENDS > 2
       #define WRITE_HEATER_2(v) WRITE(HEATER_2_PIN, v)
@@ -336,17 +259,12 @@
       #endif
     #endif
   #endif
-  #if ENABLED(HEATERS_PARALLEL)
-    #define WRITE_HEATER_0(v) { WRITE_HEATER_0P(v); WRITE_HEATER_1(v); }
-  #else
-    #define WRITE_HEATER_0(v) WRITE_HEATER_0P(v)
+  #if HAS_HEATER_BED
+    #define WRITE_HEATER_BED(v) WRITE(HEATER_BED_PIN, v)
   #endif
+  #define WRITE_HEATER_0(v) WRITE_HEATER_0P(v)
   #define WRITE_FAN_N(n, v) WRITE_FAN##n(v)
-  #define PROBE_SELECTED (ENABLED(FIX_MOUNTED_PROBE) || ENABLED(Z_PROBE_ALLEN_KEY) || HAS_Z_SERVO_ENDSTOP || ENABLED(Z_PROBE_SLED))
   #define PROBE_PIN_CONFIGURED (HAS_Z_MIN_PROBE_PIN || (HAS_Z_MIN && ENABLED(Z_MIN_PROBE_USES_Z_MIN_ENDSTOP_PIN)))
-  #if ENABLED(Z_PROBE_ALLEN_KEY)
-    #define PROBE_IS_TRIGGERED_WHEN_STOWED_TEST
-  #endif
   #undef X_PROBE_OFFSET_FROM_EXTRUDER
   #undef Y_PROBE_OFFSET_FROM_EXTRUDER
   #undef Z_PROBE_OFFSET_FROM_EXTRUDER
@@ -357,14 +275,7 @@
   /**
    * Buzzer/Speaker
    */
-  #if ENABLED(LCD_USE_I2C_BUZZER)
-    #ifndef LCD_FEEDBACK_FREQUENCY_HZ
-      #define LCD_FEEDBACK_FREQUENCY_HZ 1000
-    #endif
-    #ifndef LCD_FEEDBACK_FREQUENCY_DURATION_MS
-      #define LCD_FEEDBACK_FREQUENCY_DURATION_MS 100
-    #endif
-  #elif PIN_EXISTS(BEEPER)
+  #if PIN_EXISTS(BEEPER)
     #ifndef LCD_FEEDBACK_FREQUENCY_HZ
       #define LCD_FEEDBACK_FREQUENCY_HZ 5000
     #endif
@@ -376,19 +287,4 @@
       #define LCD_FEEDBACK_FREQUENCY_DURATION_MS 2
     #endif
   #endif
-
-  /**
-   * Z_HOMING_HEIGHT / Z_PROBE_TRAVEL_HEIGHT
-   */
-  #ifndef Z_HOMING_HEIGHT
-    #ifndef Z_PROBE_TRAVEL_HEIGHT
-      #define Z_HOMING_HEIGHT 0
-    #else
-      #define Z_HOMING_HEIGHT Z_PROBE_TRAVEL_HEIGHT
-    #endif
-  #endif
-  #ifndef Z_PROBE_TRAVEL_HEIGHT
-    #define Z_PROBE_TRAVEL_HEIGHT Z_HOMING_HEIGHT
-  #endif
-
 #endif // CONDITIONALS_POST_H
