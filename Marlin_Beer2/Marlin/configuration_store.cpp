@@ -1,26 +1,4 @@
 /**
- * Marlin 3D Printer Firmware
- * Copyright (C) 2016 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
- *
- * Based on Sprinter and grbl.
- * Copyright (C) 2011 Camiel Gubbels / Erik van der Zalm
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- */
-
-/**
  * configuration_store.cpp
  *
  * Configuration and EEPROM storage
@@ -84,27 +62,22 @@ void Config_Postprocess() {
 }
 
 #if ENABLED(EEPROM_SETTINGS)
-
   #define DUMMY_PID_VALUE 3000.0f
   #define EEPROM_START() int eeprom_index = EEPROM_OFFSET
   #define EEPROM_SKIP(VAR) eeprom_index += sizeof(VAR)
   #define EEPROM_WRITE(VAR) _EEPROM_writeData(eeprom_index, (uint8_t*)&VAR, sizeof(VAR))
   #define EEPROM_READ(VAR) _EEPROM_readData(eeprom_index, (uint8_t*)&VAR, sizeof(VAR))
 
-/**
- * M500 - Store Configuration
- */
+  /**
+  * M500 - Store Configuration
+  */
 void Config_StoreSettings()  {
   float dummy = 0.0f;
   char ver[4] = "000";
-
   EEPROM_START();
-
   EEPROM_WRITE(ver);     // invalidate data first
   EEPROM_SKIP(eeprom_checksum); // Skip the checksum slot
-
   eeprom_checksum = 0; // clear before first "real data"
-
   EEPROM_WRITE(tempObjMacerador);
   EEPROM_WRITE(tempObjLicor);
   EEPROM_WRITE(tempObjHervido);
@@ -147,9 +120,6 @@ void Config_StoreSettings()  {
     EEPROM_WRITE(thermalManager.bedKp);
     EEPROM_WRITE(thermalManager.bedKi);
     EEPROM_WRITE(thermalManager.bedKd);
-  #endif
-  #if !HAS_LCD_CONTRAST
-    const int lcd_contrast = 32;
   #endif
   EEPROM_WRITE(lcd_contrast);
   dummy = 1.0f;
@@ -228,10 +198,6 @@ void Config_RetrieveSettings() {
       }
     #else
       for (uint8_t q=3; q--;) EEPROM_READ(dummy); // bedKp, bedKi, bedKd
-    #endif
-
-    #if !HAS_LCD_CONTRAST
-      int lcd_contrast;
     #endif
     EEPROM_READ(lcd_contrast);   
     EEPROM_READ(dummy);
@@ -359,16 +325,6 @@ void Config_PrintSettings(bool forReplay) {
     #endif
 
   #endif // PIDTEMP || PIDTEMPBED
-
-  #if HAS_LCD_CONTRAST
-    CONFIG_ECHO_START;
-    if (!forReplay) {
-      SERIAL_ECHOLNPGM("LCD Contrast:");
-      CONFIG_ECHO_START;
-    }
-    SERIAL_ECHOPAIR("  M250 C", lcd_contrast);
-    SERIAL_EOL;
-  #endif
 }
 
 #endif // !DISABLE_M503

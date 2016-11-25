@@ -80,9 +80,6 @@ uint8_t lcdDrawUpdate = LCDVIEW_CLEAR_CALL_REDRAW; // Set when the LCD needs to 
   static void lcd_control_motion_menu();
   static void lcd_control_volumetric_menu();
   static void prueba();
-  #if HAS_LCD_CONTRAST
-    static void lcd_set_contrast();
-  #endif
   // Function pointer to menu functions.
   typedef void (*screenFunc_t)();
 
@@ -737,9 +734,7 @@ void kill_screen(const char* lcd_msg) {
 
 /** LCD API **/
 void lcd_init() {
-
   lcd_implementation_init();
-
   #if ENABLED(NEWPANEL)
     #if BUTTON_EXISTS(EN1)
       SET_INPUT(BTN_EN1);
@@ -769,7 +764,6 @@ void lcd_init() {
     #endif
 
   #else // !NEWPANEL
-
     #if ENABLED(SR_LCD_2W_NL) // Non latching 2 wire shift register
       pinMode(SR_DATA_PIN, OUTPUT);
       pinMode(SR_CLK_PIN, OUTPUT);
@@ -782,14 +776,11 @@ void lcd_init() {
       WRITE(SHIFT_LD, HIGH);
       WRITE(SHIFT_EN, LOW);
     #endif // SR_LCD_2W_NL
-
   #endif // !NEWPANEL
   #if ENABLED(LCD_HAS_SLOW_BUTTONS)
     slow_buttons = 0;
   #endif
-
   lcd_buttons_update();
-
   #if ENABLED(ULTIPANEL)
     encoderDiff = 0;
   #endif
@@ -1030,16 +1021,7 @@ void lcd_setalertstatuspgm(const char* message) {
 }
 
 void lcd_reset_alert_level() { lcd_status_message_level = 0; }
-
-#if HAS_LCD_CONTRAST
-  void set_lcd_contrast(int value) {
-    lcd_contrast = constrain(value, LCD_CONTRAST_MIN, LCD_CONTRAST_MAX);
-    u8g.setContrast(lcd_contrast);
-  }
-#endif
-
 #if ENABLED(ULTIPANEL)
-
   /**
    * Setup Rotary Encoder Bit Values (for two pin encoders to indicate movement)
    * These values are independent of which pins are used for EN_A and EN_B indications
