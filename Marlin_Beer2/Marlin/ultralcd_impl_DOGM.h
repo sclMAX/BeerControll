@@ -295,15 +295,15 @@ static void lcd_implementation_status_screen() {
   u8g_uint_t anchoPantalla = u8g.getWidth();
   u8g.setColorIndex(1); // black on white 
   bool blink = lcd_blink();
-  //HERVIDO
+  //LICOR
   drawOlla(3, 8, 'L');
-
+  //RECIRCULADO
   if(isResirculando){
       drawRecirculado((OLLA_WIDTH + 3) + (((anchoPantalla/2) - (OLLA_WIDTH / 2)) - (OLLA_WIDTH + 3))/2, 20, 'R');
   }
    //MACERADOR
   drawOlla((anchoPantalla / 2) -(OLLA_WIDTH / 2) , 8, 'M');
-  //LICOR
+  //HERVIDO
   drawOlla(anchoPantalla - (OLLA_WIDTH + 3), 8, 'H');
   // Status Menu Font for SD info, Heater status, Fan, XYZ
   lcd_setFont(FONT_STATUSMENU);
